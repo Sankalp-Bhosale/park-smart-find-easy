@@ -79,7 +79,7 @@ const Map: React.FC<MapProps> = ({
     if (!isLoaded || !mapRef.current || map) return;
     
     try {
-      const mapInstance = new window.google.maps.Map(mapRef.current, {
+      const mapOptions = {
         center,
         zoom,
         mapTypeControl: false,
@@ -96,44 +96,59 @@ const Map: React.FC<MapProps> = ({
             "stylers": [{ "visibility": "off" }]
           }
         ]
-      });
+      };
       
-      setMap(mapInstance);
-      
-      // Add search box functionality if interactive
-      if (interactive && searchInputRef.current) {
-        try {
-          const searchBox = new window.google.maps.places.SearchBox(searchInputRef.current);
-          mapInstance.controls[window.google.maps.ControlPosition.TOP_CENTER].push(searchInputRef.current);
-          
-          mapInstance.addListener('bounds_changed', () => {
-            searchBox.setBounds(mapInstance.getBounds());
-          });
-          
-          searchBox.addListener('places_changed', () => {
-            const places = searchBox.getPlaces();
-            if (places.length === 0) return;
-            
-            const place = places[0];
-            if (!place.geometry || !place.geometry.location) return;
-            
-            // If we have a search handler, call it with the place name
-            if (onSearch) {
-              onSearch(place.name);
+      // If Google Maps API is loaded properly
+      if (window.google && window.google.maps) {
+        const mapInstance = new window.google.maps.Map(mapRef.current, mapOptions);
+        setMap(mapInstance);
+        
+        // Add search box functionality if interactive
+        if (interactive && searchInputRef.current) {
+          try {
+            if (window.google.maps.places) {
+              const searchBox = new window.google.maps.places.SearchBox(searchInputRef.current);
+              mapInstance.controls[window.google.maps.ControlPosition.TOP_CENTER].push(searchInputRef.current);
+              
+              mapInstance.addListener('bounds_changed', () => {
+                searchBox.setBounds(mapInstance.getBounds());
+              });
+              
+              searchBox.addListener('places_changed', () => {
+                const places = searchBox.getPlaces();
+                if (places.length === 0) return;
+                
+                const place = places[0];
+                if (!place.geometry || !place.geometry.location) return;
+                
+                // If we have a search handler, call it with the place name
+                if (onSearch) {
+                  onSearch(place.name);
+                }
+                
+                // Center map on the selected place
+                mapInstance.setCenter(place.geometry.location);
+                mapInstance.setZoom(16);
+              });
+            } else {
+              console.warn("Google Places API not available");
             }
-            
-            // Center map on the selected place
-            mapInstance.setCenter(place.geometry.location);
-            mapInstance.setZoom(16);
-          });
-        } catch (error) {
-          console.error("Error initializing search box:", error);
-          toast({
-            title: "Search functionality limited",
-            description: "Unable to initialize Google Places search",
-            variant: "destructive",
-          });
+          } catch (error) {
+            console.error("Error initializing search box:", error);
+            toast({
+              title: "Search functionality limited",
+              description: "Using fallback search mechanism",
+            });
+          }
         }
+        
+        // Add error listener
+        mapInstance.addListener('error', (e: any) => {
+          console.error("Map error:", e);
+          setMapError("Error displaying the map");
+        });
+      } else {
+        setMapError("Google Maps API not available");
       }
     } catch (error) {
       console.error("Error initializing Google Maps:", error);
@@ -143,7 +158,7 @@ const Map: React.FC<MapProps> = ({
 
   // Update markers whenever the markers prop changes
   useEffect(() => {
-    if (!map || !isLoaded) return;
+    if (!map || !isLoaded || !window.google) return;
     
     try {
       // Clear existing markers
@@ -198,7 +213,7 @@ const Map: React.FC<MapProps> = ({
 
   // Update map center when center prop changes
   useEffect(() => {
-    if (map && isLoaded) {
+    if (map && isLoaded && window.google) {
       map.setCenter(center);
     }
   }, [map, center, isLoaded]);
@@ -229,6 +244,15 @@ const Map: React.FC<MapProps> = ({
           };
           map.setCenter(pos);
           map.setZoom(16);
+          
+          // If we have a search handler, let's search for parking in this area
+          if (onSearch) {
+            onSearch("parking near me");
+            toast({
+              title: "Location Found",
+              description: "Showing parking spots near your current location",
+            });
+          }
         },
         () => {
           console.error("Error: The Geolocation service failed.");
@@ -257,17 +281,70 @@ const Map: React.FC<MapProps> = ({
     }
   };
 
-  // If there's a map error, display fallback UI
+  // If there's a map error, display fallback UI with a static map image
   if (mapError) {
     return (
       <div className={`relative overflow-hidden rounded-lg ${className} flex flex-col items-center justify-center bg-gray-100 p-6`}>
-        <AlertCircle size={48} className="text-red-500 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Map Error</h3>
-        <p className="text-sm text-gray-600 text-center mb-4">{mapError}</p>
-        <p className="text-xs text-gray-500 text-center max-w-md">
-          This might be due to API key restrictions or billing not being enabled.
-          The app will continue to work with limited functionality.
-        </p>
+        <div className="w-full h-full absolute">
+          <img 
+            src="/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"
+            alt="Static map"
+            className="w-full h-full object-cover opacity-20"
+          />
+        </div>
+        <div className="relative z-10 text-center p-4 bg-white/80 rounded-lg shadow-md">
+          <AlertCircle size={48} className="text-orange-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Map Display Limited</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            The interactive map is currently unavailable. We're using a static map view.
+          </p>
+          <p className="text-xs text-gray-500 max-w-md">
+            This might be due to API key restrictions or billing not being enabled.
+            You can still search and view parking locations.
+          </p>
+          
+          {onSearch && (
+            <form onSubmit={handleSearchSubmit} className="mt-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Where do you want to park?"
+                  className="w-full h-12 pl-10 pr-4 rounded-full border border-gray-300 text-sm"
+                />
+                <Button 
+                  type="submit" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 px-3 text-xs bg-park-yellow text-black rounded-full"
+                >
+                  Search
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+        
+        {interactive && (
+          <div className="absolute bottom-4 right-4 flex gap-2">
+            <Button 
+              variant="outline" 
+              className="bg-white shadow-md"
+              onClick={handleCurrentLocation}
+            >
+              <Compass size={18} className="mr-2" />
+              My Location
+            </Button>
+          </div>
+        )}
+        
+        {markers && markers.length > 0 && (
+          <div className="absolute bottom-20 left-4 bg-white/80 p-2 rounded-lg shadow-md">
+            <p className="font-medium text-sm">Found {markers.length} parking spots</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -310,9 +387,9 @@ const Map: React.FC<MapProps> = ({
         </div>
       )}
       
-      {/* Search box */}
+      {/* Search box - hidden because we're using the one in FindParking.tsx */}
       {interactive && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-[90%] max-w-md">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-[90%] max-w-md hidden">
           <form onSubmit={handleSearchSubmit} className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
             <input

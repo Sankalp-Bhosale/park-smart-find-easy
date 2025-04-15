@@ -19,19 +19,19 @@ const Onboarding = () => {
     {
       title: "Find the nearest parking lot",
       description: "Avoid parking hassle by finding a parking spot near you",
-      image: "/lovable-uploads/69f1ee60-dc89-4628-870d-8c9306bf08ba.png",
+      image: "/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png",
       bgColor: "bg-park-yellow",
     },
     {
       title: "Book your Slot on the go",
       description: "Reserve your spot and enjoy hassle-free parking",
-      image: "/lovable-uploads/69f1ee60-dc89-4628-870d-8c9306bf08ba.png",
+      image: "/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png",
       bgColor: "bg-park-yellow",
     },
     {
       title: "Search, Discover & Park",
       description: "Reserve your spot and enjoy hassle-free parking",
-      image: "/lovable-uploads/69f1ee60-dc89-4628-870d-8c9306bf08ba.png",
+      image: "/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png",
       bgColor: "bg-park-yellow",
     },
   ];
@@ -75,15 +75,15 @@ const Onboarding = () => {
       </Button>
       
       <div className="flex-grow flex flex-col items-center justify-center px-6 py-12">
-        <div className="h-64 w-64 mb-8">
+        <div className="w-full max-w-md mb-8 flex justify-center">
           <img 
             src={slides[currentSlide].image} 
             alt={slides[currentSlide].title}
-            className="w-full h-full object-contain" 
+            className="h-64 object-contain" 
           />
         </div>
         
-        <h1 className="text-3xl font-bold mb-3 text-center text-black">
+        <h1 className="text-2xl font-bold mb-3 text-center text-black">
           {slides[currentSlide].title}
         </h1>
         
@@ -96,14 +96,14 @@ const Onboarding = () => {
             <div
               key={index}
               className={`h-2 rounded-full ${
-                currentSlide === index ? "w-8 bg-black" : "w-2 bg-gray-400"
+                currentSlide === index ? "w-8 bg-black" : "w-2 bg-black/30"
               } transition-all`}
             />
           ))}
         </div>
         
         <Button
-          className="w-full bg-black text-white rounded-full py-6"
+          className="w-full max-w-xs bg-black text-white rounded-full py-6"
           onClick={nextSlide}
         >
           {currentSlide < slides.length - 1 ? (

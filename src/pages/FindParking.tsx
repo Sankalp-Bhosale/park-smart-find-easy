@@ -35,6 +35,8 @@ const FindParking = () => {
   }, [locationState]);
 
   const handleSearch = async (query: string) => {
+    if (!query.trim()) return;
+    
     setIsLoading(true);
     try {
       await searchParkingLots(query);
@@ -96,14 +98,18 @@ const FindParking = () => {
           
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
-              placeholder="Search for parking"
-              className="w-full h-10 pl-10 pr-4 rounded-full border border-gray-200 text-sm"
-            />
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleSearch(searchQuery);
+            }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Where do you want to park?"
+                className="w-full h-10 pl-10 pr-4 rounded-full border border-gray-200 text-sm"
+              />
+            </form>
           </div>
           
           <Button 
@@ -137,16 +143,25 @@ const FindParking = () => {
       {/* Map View */}
       {selectedTab === "map" && (
         <div className="h-[calc(100vh-180px)]">
-          <Map
-            className="h-full w-full"
-            markers={filteredParkingLots.map(lot => ({
-              id: lot.id,
-              position: lot.location,
-              title: lot.name,
-            }))}
-            onMarkerClick={handleMarkerClick}
-            onSearch={handleSearch}
-          />
+          {isLoading ? (
+            <div className="flex h-full items-center justify-center bg-gray-50">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-park-yellow mx-auto mb-4"></div>
+                <p className="text-gray-500">Searching for parking spots...</p>
+              </div>
+            </div>
+          ) : (
+            <Map
+              className="h-full w-full"
+              markers={filteredParkingLots.map(lot => ({
+                id: lot.id,
+                position: lot.location,
+                title: lot.name,
+              }))}
+              onMarkerClick={handleMarkerClick}
+              onSearch={handleSearch}
+            />
+          )}
           
           {/* Selected Parking Lot Card */}
           {selectedParkingLot && (
@@ -201,7 +216,14 @@ const FindParking = () => {
       {/* List View */}
       {selectedTab === "list" && (
         <div className="p-4">
-          {filteredParkingLots.length > 0 ? (
+          {isLoading ? (
+            <div className="flex h-48 items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-park-yellow mx-auto mb-4"></div>
+                <p className="text-gray-500">Searching for parking spots...</p>
+              </div>
+            </div>
+          ) : filteredParkingLots.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {filteredParkingLots.map((lot) => (
                 <Card
@@ -212,7 +234,7 @@ const FindParking = () => {
                   <div className="flex h-28">
                     <div className="w-28 h-full bg-gray-200 overflow-hidden">
                       <img
-                        src={lot.images?.[0] || "/placeholder.svg"}
+                        src={lot.images?.[0] || "/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"}
                         alt={lot.name}
                         className="w-full h-full object-cover"
                       />

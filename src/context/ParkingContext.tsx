@@ -52,7 +52,7 @@ interface ParkingContextType {
   removeFavoriteLocation: (location: string) => void;
 }
 
-// Sample data
+// Sample data with improved details matching the design
 const MOCK_PARKING_LOTS: ParkingLot[] = [
   {
     id: "parking-1",
@@ -64,9 +64,9 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
     hourlyRate: 50,
     dailyRate: 150,
     distance: 0.5,
-    images: ["/lovable-uploads/69f1ee60-dc89-4628-870d-8c9306bf08ba.png"],
+    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
     rating: 4.2,
-    amenities: ["EV Charging", "Security", "Camera"],
+    amenities: ["EV Charging", "Security", "Camera", "Covered"],
     operatingHours: "Open Now: 10:00 AM - 11:30 PM"
   },
   {
@@ -79,7 +79,7 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
     hourlyRate: 60,
     dailyRate: 200,
     distance: 1.2,
-    images: ["/lovable-uploads/69f1ee60-dc89-4628-870d-8c9306bf08ba.png"],
+    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
     rating: 4.5,
     amenities: ["Covered", "Security", "Valet", "EV Charging"],
     operatingHours: "Open 24 Hours"
@@ -94,10 +94,40 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
     hourlyRate: 40,
     dailyRate: 120,
     distance: 2.5,
-    images: ["/lovable-uploads/69f1ee60-dc89-4628-870d-8c9306bf08ba.png"],
+    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
     rating: 3.8,
     amenities: ["Open Air", "Security"],
     operatingHours: "6:00 AM - 12:00 AM"
+  },
+  {
+    id: "parking-4",
+    name: "City Center Parking",
+    address: "Kurla West, Mumbai",
+    location: { lat: 19.0728, lng: 72.8826 },
+    totalSpots: 80,
+    availableSpots: 25,
+    hourlyRate: 30,
+    dailyRate: 100,
+    distance: 1.8,
+    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
+    rating: 3.5,
+    amenities: ["Open Air", "CCTV", "24/7 Security"],
+    operatingHours: "Open 24 Hours"
+  },
+  {
+    id: "parking-5",
+    name: "Mall of Mumbai Parking",
+    address: "BKC, Bandra East, Mumbai",
+    location: { lat: 19.0607, lng: 72.8681 },
+    totalSpots: 300,
+    availableSpots: 120,
+    hourlyRate: 70,
+    dailyRate: 250,
+    distance: 3.2,
+    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
+    rating: 4.7,
+    amenities: ["Covered", "Security", "Valet", "Car Wash", "EV Charging"],
+    operatingHours: "9:00 AM - 11:00 PM"
   }
 ];
 
@@ -107,13 +137,30 @@ const ParkingContext = createContext<ParkingContextType | undefined>(undefined);
 export function ParkingProvider({ children }: { children: ReactNode }) {
   const [parkingLots, setParkingLots] = useState<ParkingLot[]>(MOCK_PARKING_LOTS);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [favoriteLocations, setFavoriteLocations] = useState<string[]>([]);
+  const [favoriteLocations, setFavoriteLocations] = useState<string[]>(["Andheri East", "Bandra West"]);
 
   // Search for parking lots near a location
   const searchParkingLots = async (location: string): Promise<ParkingLot[]> => {
     // In a real app, this would make an API call to get parking lots near the location
-    // For now, we'll just return our mock data
-    return parkingLots;
+    // For now, we'll simulate a delay and return filtered lots
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Add the search query to favorites
+        if (!favoriteLocations.includes(location) && location !== "parking near me") {
+          setFavoriteLocations(prev => [...prev, location]);
+        }
+        
+        // Update distances randomly to simulate different locations
+        const updatedLots = MOCK_PARKING_LOTS.map(lot => ({
+          ...lot,
+          distance: parseFloat((Math.random() * 5).toFixed(1)),
+          availableSpots: Math.floor(Math.random() * lot.totalSpots)
+        }));
+        
+        setParkingLots(updatedLots);
+        resolve(updatedLots);
+      }, 1500);
+    });
   };
 
   // Get a parking lot by ID
@@ -156,7 +203,9 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
 
   // Manage favorite locations
   const addFavoriteLocation = (location: string) => {
-    setFavoriteLocations(prev => [...prev, location]);
+    if (!favoriteLocations.includes(location)) {
+      setFavoriteLocations(prev => [...prev, location]);
+    }
   };
 
   const removeFavoriteLocation = (location: string) => {

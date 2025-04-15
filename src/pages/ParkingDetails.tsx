@@ -1,37 +1,47 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart } from "lucide-react";
+import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParking } from "@/context/ParkingContext";
 import { Map } from "@/components/ui/map";
 import { toast } from "@/components/ui/use-toast";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const ParkingDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getParkingLotById } = useParking();
+  const { getParkingLotById, calculateParkingCost } = useParking();
   const [parkingLot, setParkingLot] = useState(getParkingLotById(id || ""));
   const [isFavorite, setIsFavorite] = useState(false);
+  const [selectedDuration, setSelectedDuration] = useState<number>(1);
+  const [totalCost, setTotalCost] = useState<number>(0);
 
   useEffect(() => {
     if (!parkingLot) {
-      // If parking lot not found, redirect to find parking
       navigate("/find-parking");
       toast({
         title: "Error",
         description: "Parking lot not found",
         variant: "destructive",
       });
+    } else {
+      // Calculate initial cost
+      setTotalCost(calculateParkingCost(parkingLot.id, selectedDuration));
     }
   }, [parkingLot, navigate]);
 
+  useEffect(() => {
+    if (parkingLot) {
+      setTotalCost(calculateParkingCost(parkingLot.id, selectedDuration));
+    }
+  }, [selectedDuration, parkingLot]);
+
   if (!parkingLot) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   const handleShareClick = () => {
-    // In a real app, this would use the Web Share API
     toast({
       title: "Share",
       description: `Sharing link to ${parkingLot.name}`,
@@ -47,6 +57,8 @@ const ParkingDetails = () => {
         `${parkingLot.name} has been added to your favorites`,
     });
   };
+
+  const durations = [1, 2, 3, 4];
 
   return (
     <div className="min-h-screen bg-white relative flex flex-col">
@@ -119,61 +131,108 @@ const ParkingDetails = () => {
           )}
         </div>
 
-        {/* Details Section */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3">Details</h2>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600 mb-2">
-              <span className="font-medium text-black">Address:</span> {parkingLot.address}
-            </p>
-            <p className="text-sm text-gray-600 mb-2">
-              <span className="font-medium text-black">Total Spots:</span> {parkingLot.totalSpots}
-            </p>
-            <p className="text-sm text-gray-600 mb-2">
-              <span className="font-medium text-black">Available:</span> {parkingLot.availableSpots} spots
-            </p>
-            <p className="text-sm text-gray-600">
-              <span className="font-medium text-black">Operation:</span> {parkingLot.operatingHours || "24/7"}
-            </p>
-          </div>
-        </div>
-
-        {/* Price Section */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3">Price Information</h2>
-          <div className="grid grid-cols-2 gap-3">
+        {/* Tabs for Details */}
+        <Tabs defaultValue="details" className="mb-6">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="photos">Photos</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="space-y-4">
             <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Hourly Rate</p>
-              <p className="text-xl font-bold">₹{parkingLot.hourlyRate}</p>
+              <h3 className="font-medium mb-2">Address</h3>
+              <p className="text-sm text-gray-600 mb-2">{parkingLot.address}</p>
             </div>
+            
             <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Daily Rate</p>
-              <p className="text-xl font-bold">₹{parkingLot.dailyRate}</p>
+              <h3 className="font-medium mb-2">Operation</h3>
+              <p className="text-sm text-gray-600">
+                {parkingLot.operatingHours || "Open Now: 10:00 AM - 11:30 PM"}
+              </p>
             </div>
-          </div>
-        </div>
-
-        {/* Amenities */}
-        {parkingLot.amenities && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold mb-3">Amenities</h2>
-            <div className="flex flex-wrap gap-2">
-              {parkingLot.amenities.map((amenity, index) => (
-                <div 
-                  key={index} 
-                  className="bg-gray-50 rounded-lg px-4 py-2 text-sm"
-                >
-                  {amenity}
+            
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="font-medium mb-2">Availability</h3>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium text-green-600">{parkingLot.availableSpots}</span> spots available out of {parkingLot.totalSpots}
+              </p>
+            </div>
+            
+            {parkingLot.amenities && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-medium mb-2">Amenities</h3>
+                <div className="flex flex-wrap gap-2">
+                  {parkingLot.amenities.map((amenity, index) => (
+                    <div 
+                      key={index} 
+                      className="bg-white rounded-lg px-3 py-1 text-xs border border-gray-200"
+                    >
+                      {amenity}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="photos">
+            <div className="grid grid-cols-2 gap-2">
+              {parkingLot.images && parkingLot.images.length > 0 ? (
+                parkingLot.images.map((image, index) => (
+                  <img 
+                    key={index}
+                    src={image} 
+                    alt={`${parkingLot.name} view ${index + 1}`}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                ))
+              ) : (
+                <div className="col-span-2 py-8 text-center text-gray-400">
+                  No photos available
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Select Parking Duration */}
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-3">Select Parking Duration</h2>
+          <div className="grid grid-cols-4 gap-2">
+            {durations.map((hours) => (
+              <button
+                key={hours}
+                onClick={() => setSelectedDuration(hours)}
+                className={`py-3 rounded-lg text-center ${
+                  selectedDuration === hours
+                    ? "bg-park-yellow text-black font-medium"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {hours} hr
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Price Information */}
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-gray-500">Total Cost</p>
+              <p className="text-2xl font-bold">₹{totalCost}</p>
+            </div>
+            <div className="flex items-center gap-1 text-sm text-gray-600">
+              <Calendar size={16} />
+              <span>{selectedDuration} {selectedDuration === 1 ? 'hour' : 'hours'}</span>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Book Button */}
         <Button 
           className="w-full bg-park-yellow text-black font-bold py-6 rounded-xl"
-          onClick={() => navigate(`/book/${parkingLot.id}`)}
+          onClick={() => navigate(`/book/${parkingLot.id}?duration=${selectedDuration}`)}
         >
           Book Now
         </Button>
