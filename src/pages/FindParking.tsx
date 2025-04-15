@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useParking } from "@/context/ParkingContext";
 import { Map } from "@/components/ui/map";
 import BottomNav from "@/components/navigation/BottomNav";
+import { toast } from "@/components/ui/use-toast";
 
 interface LocationState {
   query?: string;
@@ -16,10 +17,11 @@ interface LocationState {
 const FindParking = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { nearbyParkingLots } = useParking();
+  const { nearbyParkingLots, searchParkingLots } = useParking();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<"list" | "map">("map");
   const [selectedParkingLot, setSelectedParkingLot] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Get query from location state if available
   const locationState = location.state as LocationState | undefined;
@@ -27,8 +29,29 @@ const FindParking = () => {
   useEffect(() => {
     if (locationState?.query) {
       setSearchQuery(locationState.query);
+      handleSearch(locationState.query);
     }
   }, [locationState]);
+
+  const handleSearch = async (query: string) => {
+    setIsLoading(true);
+    try {
+      await searchParkingLots(query);
+      toast({
+        title: "Search completed",
+        description: `Found parking spots near "${query}"`,
+      });
+    } catch (error) {
+      console.error("Search error:", error);
+      toast({
+        title: "Search error",
+        description: "Unable to find parking spots. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter parking lots based on search query
   const filteredParkingLots = searchQuery
@@ -67,12 +90,23 @@ const FindParking = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
               placeholder="Search for parking"
               className="w-full h-10 pl-10 pr-4 rounded-full border border-gray-200 text-sm"
             />
           </div>
           
-          <Button variant="ghost" size="icon" className="ml-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="ml-2"
+            onClick={() => {
+              toast({
+                title: "Filters",
+                description: "Filter functionality coming soon!",
+              });
+            }}
+          >
             <Filter size={20} />
           </Button>
         </div>
@@ -101,6 +135,7 @@ const FindParking = () => {
               title: lot.name,
             }))}
             onMarkerClick={handleMarkerClick}
+            onSearch={handleSearch}
           />
           
           {/* Selected Parking Lot Card */}
@@ -111,7 +146,7 @@ const FindParking = () => {
                 .map(lot => (
                   <Card 
                     key={lot.id}
-                    className="p-4 shadow-lg rounded-xl border-none cursor-pointer"
+                    className="p-4 shadow-lg rounded-xl border-none cursor-pointer animate-fade-in"
                     onClick={() => handleParkingLotClick(lot.id)}
                   >
                     <div className="flex justify-between">

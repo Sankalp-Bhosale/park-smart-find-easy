@@ -1,16 +1,18 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, MapPin, Clock, Car, Star, Info } from "lucide-react";
+import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParking } from "@/context/ParkingContext";
 import { Map } from "@/components/ui/map";
+import { toast } from "@/components/ui/use-toast";
 
 const ParkingDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getParkingLotById } = useParking();
   const [parkingLot, setParkingLot] = useState(getParkingLotById(id || ""));
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     if (!parkingLot) {
@@ -23,6 +25,24 @@ const ParkingDetails = () => {
     return null; // Or a loading spinner
   }
 
+  const handleShareClick = () => {
+    // In a real app, this would use the Web Share API
+    toast({
+      title: "Share",
+      description: `Sharing link to ${parkingLot.name}`,
+    });
+  };
+
+  const handleFavoriteClick = () => {
+    setIsFavorite(!isFavorite);
+    toast({
+      title: isFavorite ? "Removed from favorites" : "Added to favorites",
+      description: isFavorite ? 
+        `${parkingLot.name} has been removed from your favorites` :
+        `${parkingLot.name} has been added to your favorites`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white relative flex flex-col">
       {/* Back Button */}
@@ -34,6 +54,29 @@ const ParkingDetails = () => {
       >
         <ChevronLeft size={20} />
       </Button>
+      
+      {/* Action Buttons */}
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          className="bg-white shadow-md rounded-full h-10 w-10"
+          onClick={handleShareClick}
+        >
+          <Share2 size={18} />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className={`${isFavorite ? 'bg-pink-50' : 'bg-white'} shadow-md rounded-full h-10 w-10`}
+          onClick={handleFavoriteClick}
+        >
+          <Heart 
+            size={18} 
+            className={isFavorite ? 'text-red-500 fill-red-500' : ''}
+          />
+        </Button>
+      </div>
 
       {/* Map Preview */}
       <div className="h-64 w-full">
