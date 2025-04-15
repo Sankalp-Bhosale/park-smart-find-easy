@@ -61,6 +61,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				/* Park Smart Custom Colors */
+				park: {
+					yellow: 'hsl(var(--park-yellow))',
+					dark: 'hsl(var(--park-dark))',
+					gray: 'hsl(var(--park-gray))',
+					teal: 'hsl(var(--park-teal))',
+					purple: 'hsl(var(--park-purple))',
 				}
 			},
 			borderRadius: {
