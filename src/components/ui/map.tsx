@@ -1,7 +1,8 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Navigation, Search, Plus, Minus, Compass } from "lucide-react";
+import { MapPin, Navigation, Search, Plus, Minus, Compass, AlertCircle } from "lucide-react";
 import { Button } from "./button";
+import { toast } from "./use-toast";
 
 // Google Maps integration
 interface MapProps {
@@ -42,6 +43,7 @@ const Map: React.FC<MapProps> = ({
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   // Initialize the map
   useEffect(() => {
@@ -51,6 +53,12 @@ const Map: React.FC<MapProps> = ({
       script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyClawIm_JLwUOmt_W7S3wbf2CnAKdj3orI&libraries=places&callback=initMap`;
       script.async = true;
       script.defer = true;
+      
+      // Track loading errors
+      script.onerror = () => {
+        setMapError("Failed to load Google Maps API");
+        console.error("Error loading Google Maps script");
+      };
       
       window.initMap = () => {
         setIsLoaded(true);
@@ -94,32 +102,42 @@ const Map: React.FC<MapProps> = ({
       
       // Add search box functionality if interactive
       if (interactive && searchInputRef.current) {
-        const searchBox = new window.google.maps.places.SearchBox(searchInputRef.current);
-        mapInstance.controls[window.google.maps.ControlPosition.TOP_CENTER].push(searchInputRef.current);
-        
-        mapInstance.addListener('bounds_changed', () => {
-          searchBox.setBounds(mapInstance.getBounds());
-        });
-        
-        searchBox.addListener('places_changed', () => {
-          const places = searchBox.getPlaces();
-          if (places.length === 0) return;
+        try {
+          const searchBox = new window.google.maps.places.SearchBox(searchInputRef.current);
+          mapInstance.controls[window.google.maps.ControlPosition.TOP_CENTER].push(searchInputRef.current);
           
-          const place = places[0];
-          if (!place.geometry || !place.geometry.location) return;
+          mapInstance.addListener('bounds_changed', () => {
+            searchBox.setBounds(mapInstance.getBounds());
+          });
           
-          // If we have a search handler, call it with the place name
-          if (onSearch) {
-            onSearch(place.name);
-          }
-          
-          // Center map on the selected place
-          mapInstance.setCenter(place.geometry.location);
-          mapInstance.setZoom(16);
-        });
+          searchBox.addListener('places_changed', () => {
+            const places = searchBox.getPlaces();
+            if (places.length === 0) return;
+            
+            const place = places[0];
+            if (!place.geometry || !place.geometry.location) return;
+            
+            // If we have a search handler, call it with the place name
+            if (onSearch) {
+              onSearch(place.name);
+            }
+            
+            // Center map on the selected place
+            mapInstance.setCenter(place.geometry.location);
+            mapInstance.setZoom(16);
+          });
+        } catch (error) {
+          console.error("Error initializing search box:", error);
+          toast({
+            title: "Search functionality limited",
+            description: "Unable to initialize Google Places search",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error("Error initializing Google Maps:", error);
+      setMapError("Error initializing Google Maps");
     }
   }, [isLoaded, center, zoom, interactive, onSearch]);
 
@@ -127,51 +145,55 @@ const Map: React.FC<MapProps> = ({
   useEffect(() => {
     if (!map || !isLoaded) return;
     
-    // Clear existing markers
-    googleMarkers.forEach(marker => marker.setMap(null));
-    
-    // Create new markers
-    const newMarkers = markers.map(markerData => {
-      const marker = new window.google.maps.Marker({
-        position: markerData.position,
-        map: map,
-        title: markerData.title,
-        animation: window.google.maps.Animation.DROP,
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          fillColor: selectedMarkerId === markerData.id ? '#0ABAB5' : '#6B46C1',
-          fillOpacity: 1,
-          strokeWeight: 0,
-          scale: 10,
-        }
-      });
+    try {
+      // Clear existing markers
+      googleMarkers.forEach(marker => marker.setMap(null));
       
-      // Create an info window
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `<div class="p-2 text-sm font-medium">${markerData.title}</div>`
-      });
-      
-      // Add click listener
-      marker.addListener('click', () => {
+      // Create new markers
+      const newMarkers = markers.map(markerData => {
+        const marker = new window.google.maps.Marker({
+          position: markerData.position,
+          map: map,
+          title: markerData.title,
+          animation: window.google.maps.Animation.DROP,
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            fillColor: selectedMarkerId === markerData.id ? '#0ABAB5' : '#6B46C1',
+            fillOpacity: 1,
+            strokeWeight: 0,
+            scale: 10,
+          }
+        });
+        
+        // Create an info window
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: `<div class="p-2 text-sm font-medium">${markerData.title}</div>`
+        });
+        
+        // Add click listener
+        marker.addListener('click', () => {
+          if (selectedMarkerId === markerData.id) {
+            setSelectedMarkerId(null);
+            infoWindow.close();
+          } else {
+            setSelectedMarkerId(markerData.id);
+            infoWindow.open(map, marker);
+            if (onMarkerClick) onMarkerClick(markerData.id);
+          }
+        });
+        
+        // Show info window if this marker is selected
         if (selectedMarkerId === markerData.id) {
-          setSelectedMarkerId(null);
-          infoWindow.close();
-        } else {
-          setSelectedMarkerId(markerData.id);
           infoWindow.open(map, marker);
-          if (onMarkerClick) onMarkerClick(markerData.id);
         }
+        
+        return marker;
       });
       
-      // Show info window if this marker is selected
-      if (selectedMarkerId === markerData.id) {
-        infoWindow.open(map, marker);
-      }
-      
-      return marker;
-    });
-    
-    setGoogleMarkers(newMarkers);
+      setGoogleMarkers(newMarkers);
+    } catch (error) {
+      console.error("Error creating markers:", error);
+    }
   }, [map, markers, selectedMarkerId, isLoaded, onMarkerClick]);
 
   // Update map center when center prop changes
@@ -180,6 +202,22 @@ const Map: React.FC<MapProps> = ({
       map.setCenter(center);
     }
   }, [map, center, isLoaded]);
+
+  // Handle map errors from Google API
+  useEffect(() => {
+    const handleMapErrors = (event: ErrorEvent) => {
+      if (event.error && event.error.toString().includes("Google Maps")) {
+        setMapError("Google Maps API error. Please check your API key configuration.");
+        console.error("Google Maps error detected:", event);
+      }
+    };
+
+    window.addEventListener('error', handleMapErrors);
+    
+    return () => {
+      window.removeEventListener('error', handleMapErrors);
+    };
+  }, []);
 
   const handleCurrentLocation = () => {
     if (navigator.geolocation && map) {
@@ -194,6 +232,11 @@ const Map: React.FC<MapProps> = ({
         },
         () => {
           console.error("Error: The Geolocation service failed.");
+          toast({
+            title: "Location Error",
+            description: "Unable to get your current location.",
+            variant: "destructive",
+          });
         }
       );
     }
@@ -213,6 +256,21 @@ const Map: React.FC<MapProps> = ({
       onSearch(searchQuery);
     }
   };
+
+  // If there's a map error, display fallback UI
+  if (mapError) {
+    return (
+      <div className={`relative overflow-hidden rounded-lg ${className} flex flex-col items-center justify-center bg-gray-100 p-6`}>
+        <AlertCircle size={48} className="text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Map Error</h3>
+        <p className="text-sm text-gray-600 text-center mb-4">{mapError}</p>
+        <p className="text-xs text-gray-500 text-center max-w-md">
+          This might be due to API key restrictions or billing not being enabled.
+          The app will continue to work with limited functionality.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative overflow-hidden rounded-lg ${className}`}>

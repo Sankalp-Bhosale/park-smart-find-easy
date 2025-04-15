@@ -18,6 +18,11 @@ const ParkingDetails = () => {
     if (!parkingLot) {
       // If parking lot not found, redirect to find parking
       navigate("/find-parking");
+      toast({
+        title: "Error",
+        description: "Parking lot not found",
+        variant: "destructive",
+      });
     }
   }, [parkingLot, navigate]);
 

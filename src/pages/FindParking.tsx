@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Search, MapPin, Filter, Car } from "lucide-react";
+import { ChevronLeft, Search, MapPin, Filter, Car, Clock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,7 @@ const FindParking = () => {
   const [selectedTab, setSelectedTab] = useState<"list" | "map">("map");
   const [selectedParkingLot, setSelectedParkingLot] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [mapError, setMapError] = useState(false);
   
   // Get query from location state if available
   const locationState = location.state as LocationState | undefined;
@@ -68,6 +69,15 @@ const FindParking = () => {
   const handleMarkerClick = (id: string) => {
     setSelectedParkingLot(id);
     setSelectedTab("map");
+  };
+
+  const handleMapError = () => {
+    setMapError(true);
+    toast({
+      title: "Map Error",
+      description: "There was an error loading the map. Please try again later.",
+      variant: "destructive",
+    });
   };
 
   return (
