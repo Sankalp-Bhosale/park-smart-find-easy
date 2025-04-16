@@ -11,7 +11,9 @@ interface LocationState {
   reservation: {
     parkingLotId: string;
     parkingLotName: string;
-    spotNumber: string;
+    slotId?: string;
+    slotName?: string;
+    spotNumber?: string;
     startTime: Date;
     endTime: Date;
     duration: number;
@@ -23,7 +25,7 @@ const PaymentMethod = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { createReservation } = useParking();
+  const { createReservation, temporaryVehicleDetails } = useParking();
   
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
@@ -44,11 +46,11 @@ const PaymentMethod = () => {
       const createdReservation = await createReservation({
         ...reservation,
         paymentMethod,
-        vehicleDetails: {
-          model: "Maruti Swift",
-          type: "Hatchback",
-          licensePlate: "GJ 02 DG 6578"
-        }
+        vehicleDetails: temporaryVehicleDetails ? {
+          model: temporaryVehicleDetails.model,
+          type: "Sedan", // Just a default value
+          licensePlate: temporaryVehicleDetails.licensePlate
+        } : undefined
       });
       
       // Navigate to confirmation page
@@ -86,14 +88,34 @@ const PaymentMethod = () => {
               <span className="text-gray-500">Parking Lot</span>
               <span className="font-medium">{reservation.parkingLotName}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Spot</span>
-              <span className="font-medium">{reservation.spotNumber}</span>
-            </div>
+            {reservation.slotName && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Slot</span>
+                <span className="font-medium">{reservation.slotName}</span>
+              </div>
+            )}
+            {reservation.spotNumber && !reservation.slotName && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Spot</span>
+                <span className="font-medium">{reservation.spotNumber}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-gray-500">Duration</span>
               <span className="font-medium">{reservation.duration} hour{reservation.duration > 1 ? 's' : ''}</span>
             </div>
+            {temporaryVehicleDetails && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Vehicle</span>
+                  <span className="font-medium">{temporaryVehicleDetails.model}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">License Plate</span>
+                  <span className="font-medium">{temporaryVehicleDetails.licensePlate}</span>
+                </div>
+              </>
+            )}
             <div className="border-t border-gray-200 my-2 pt-2 flex justify-between">
               <span className="font-bold">Total Amount</span>
               <span className="font-bold">₹{reservation.cost}</span>

@@ -7,15 +7,17 @@ import { useParking } from "@/context/ParkingContext";
 import { Map } from "@/components/ui/map";
 import { toast } from "@/components/ui/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import ParkingSlotsView from "@/components/parking/ParkingSlotsView";
 
 const ParkingDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getParkingLotById, calculateParkingCost } = useParking();
+  const { getParkingLotById, calculateParkingCost, selectedSlot } = useParking();
   const [parkingLot, setParkingLot] = useState(getParkingLotById(id || ""));
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<number>(1);
   const [totalCost, setTotalCost] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
     if (!parkingLot) {
@@ -59,6 +61,19 @@ const ParkingDetails = () => {
   };
 
   const durations = [1, 2, 3, 4];
+
+  const handleBookNow = () => {
+    if (!selectedSlot) {
+      setActiveTab("slots");
+      toast({
+        title: "Select a slot",
+        description: "Please select a parking slot before proceeding"
+      });
+      return;
+    }
+    
+    navigate(`/book/${parkingLot.id}?duration=${selectedDuration}&slotId=${selectedSlot.id}`);
+  };
 
   return (
     <div className="min-h-screen bg-white relative flex flex-col">
@@ -132,10 +147,16 @@ const ParkingDetails = () => {
         </div>
 
         {/* Tabs for Details */}
-        <Tabs defaultValue="details" className="mb-6">
-          <TabsList className="grid grid-cols-2 mb-4">
+        <Tabs 
+          defaultValue="details" 
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="mb-6"
+        >
+          <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="photos">Photos</TabsTrigger>
+            <TabsTrigger value="slots">Slots</TabsTrigger>
           </TabsList>
           
           <TabsContent value="details" className="space-y-4">
@@ -193,7 +214,24 @@ const ParkingDetails = () => {
               )}
             </div>
           </TabsContent>
+          
+          <TabsContent value="slots">
+            <ParkingSlotsView parkingLotId={parkingLot.id} />
+          </TabsContent>
         </Tabs>
+
+        {/* Selected Slot Info (if any) */}
+        {selectedSlot && (
+          <div className="mb-6 p-4 border border-park-yellow rounded-lg bg-park-yellow/10">
+            <h3 className="font-medium mb-2">Selected Slot</h3>
+            <div className="flex justify-between">
+              <p className="text-lg font-bold">Slot {selectedSlot.name}</p>
+              <p className="text-sm">
+                {selectedSlot.type.charAt(0).toUpperCase() + selectedSlot.type.slice(1)} spot
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Select Parking Duration */}
         <div className="mb-6">
@@ -232,9 +270,9 @@ const ParkingDetails = () => {
         {/* Book Button */}
         <Button 
           className="w-full bg-park-yellow text-black font-bold py-6 rounded-xl"
-          onClick={() => navigate(`/book/${parkingLot.id}?duration=${selectedDuration}`)}
+          onClick={handleBookNow}
         >
-          Book Now
+          {selectedSlot ? `Book Slot ${selectedSlot.name}` : `Book Now`}
         </Button>
       </div>
     </div>

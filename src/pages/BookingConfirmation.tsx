@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Check, MapPin, Clock, Calendar, Car, Share2, ChevronLeft } from "lucide-react";
+import { Check, MapPin, Clock, Calendar, Car, Share2, ChevronLeft, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParking } from "@/context/ParkingContext";
 
@@ -43,6 +43,16 @@ const BookingConfirmation = () => {
     });
   };
 
+  // Generate a pseudo-QR code for the parking (in real app, this would be a QR code generator)
+  const generateQrCode = () => {
+    return (
+      <div className="border-2 border-black rounded-lg p-2 w-full h-full flex flex-col items-center justify-center">
+        <QrCode size={160} className="mb-2"/>
+        <p className="text-xs font-mono">{reservation.id}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -69,15 +79,8 @@ const BookingConfirmation = () => {
       
       {/* QR Code Section */}
       <div className="p-6 flex flex-col items-center border-b border-gray-100">
-        <div className="bg-white p-6 rounded-lg shadow-md mb-4 w-64 h-64 flex items-center justify-center">
-          {/* Placeholder for QR code - would be generated dynamically */}
-          <div className="border-2 border-gray-300 w-full h-full flex items-center justify-center">
-            <img 
-              src="/placeholder.svg" 
-              alt="QR Code for parking access" 
-              className="w-full h-full object-contain"
-            />
-          </div>
+        <div className="bg-white p-4 rounded-lg shadow-md mb-4 w-64 h-64 flex items-center justify-center">
+          {generateQrCode()}
         </div>
         <p className="text-sm text-gray-500">Show this QR code at the entrance</p>
       </div>
@@ -137,14 +140,28 @@ const BookingConfirmation = () => {
           
           {/* Spot Number */}
           <div className="bg-gray-50 p-4 rounded-lg mt-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Spot Number</span>
-              <span className="font-bold">{reservation.spotNumber}</span>
-            </div>
+            {reservation.slotName && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Slot Number</span>
+                <span className="font-bold">{reservation.slotName}</span>
+              </div>
+            )}
+            {!reservation.slotName && reservation.spotNumber && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Spot Number</span>
+                <span className="font-bold">{reservation.spotNumber}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center mt-2">
               <span className="text-gray-600">Total Amount</span>
               <span className="font-bold">₹{reservation.cost}</span>
             </div>
+            {reservation.paymentMethod && (
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-gray-600">Payment Method</span>
+                <span className="font-medium capitalize">{reservation.paymentMethod}</span>
+              </div>
+            )}
           </div>
         </div>
         
