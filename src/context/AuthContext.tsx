@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 interface User {
   id: string;
@@ -14,15 +14,36 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error("Failed to parse saved user data", error);
+        localStorage.removeItem("user");
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
   // Mock authentication functions
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // In a real app, this would make an API call
     const mockUser = {
       id: "user-1",
@@ -33,9 +54,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     setUser(mockUser);
     localStorage.setItem("user", JSON.stringify(mockUser));
+    setIsLoading(false);
   };
 
   const register = async (name: string, email: string, password: string) => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // In a real app, this would make an API call
     const mockUser = {
       id: "user-" + Math.floor(Math.random() * 1000),
@@ -45,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     setUser(mockUser);
     localStorage.setItem("user", JSON.stringify(mockUser));
+    setIsLoading(false);
   };
 
   const logout = () => {
@@ -53,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
