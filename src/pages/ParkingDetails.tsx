@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart, Calendar } from "lucide-react";
+import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart, Calendar, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParking } from "@/context/ParkingContext";
 import { Map } from "@/components/ui/map";
@@ -18,6 +18,7 @@ const ParkingDetails = () => {
   const [selectedDuration, setSelectedDuration] = useState<number>(1);
   const [totalCost, setTotalCost] = useState<number>(0);
   const [activeTab, setActiveTab] = useState("details");
+  const [mapError, setMapError] = useState(false);
 
   useEffect(() => {
     if (!parkingLot) {
@@ -57,6 +58,15 @@ const ParkingDetails = () => {
       description: isFavorite ? 
         `${parkingLot.name} has been removed from your favorites` :
         `${parkingLot.name} has been added to your favorites`,
+    });
+  };
+
+  const handleMapError = () => {
+    setMapError(true);
+    toast({
+      title: "Map Error",
+      description: "There was an error loading the map, but you can still view all details.",
+      variant: "destructive",
     });
   };
 

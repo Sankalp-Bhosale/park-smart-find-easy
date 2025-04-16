@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Navigation, Search, Plus, Minus, Compass, AlertCircle } from "lucide-react";
+import { MapPin, Navigation, Search, Plus, Minus, Compass, AlertCircle, Car } from "lucide-react";
 import { Button } from "./button";
 import { toast } from "@/components/ui/use-toast";
 
@@ -47,17 +47,15 @@ const Map: React.FC<MapProps> = ({
   const [mapError, setMapError] = useState<string | null>(null);
   const [loadRetry, setLoadRetry] = useState(0);
 
-  // Initialize the map
+  // Always use fallback for now due to Google Maps API issues
   useEffect(() => {
+    // Since we're seeing consistent Google Maps API errors, let's default to the static map
+    setMapError("Using static map due to Google Maps API limitations");
+    // We're not setting window.mapInitError = true to allow future retries
+    
+    // Still try to load Google Maps in the background for users who might have it working
     const loadGoogleMaps = async () => {
       try {
-        // Check if we've previously seen an error with Google Maps
-        if (window.mapInitError) {
-          console.log("Using fallback map due to previous initialization error");
-          setMapError("Using fallback map due to previous initialization error");
-          return;
-        }
-
         if (!window.google && !document.getElementById('google-maps-script')) {
           const script = document.createElement('script');
           script.id = 'google-maps-script';
@@ -65,36 +63,19 @@ const Map: React.FC<MapProps> = ({
           script.async = true;
           script.defer = true;
           
-          // Track loading errors
-          script.onerror = () => {
-            console.error("Error loading Google Maps script");
-            setMapError("Failed to load Google Maps API");
-            window.mapInitError = true;
-          };
-          
           window.initMap = () => {
             setIsLoaded(true);
+            // If map loads successfully, clear the error
+            setMapError(null);
           };
           
           document.body.appendChild(script);
-          
-          // Set a timeout to detect if Google Maps doesn't load in reasonable time
-          const timeoutId = setTimeout(() => {
-            if (!window.google?.maps) {
-              console.error("Google Maps timeout - using fallback");
-              setMapError("Google Maps failed to load in time");
-              window.mapInitError = true;
-            }
-          }, 5000);
-          
-          return () => clearTimeout(timeoutId);
         } else if (window.google) {
           setIsLoaded(true);
+          setMapError(null); // Clear error if Google Maps loaded successfully
         }
       } catch (error) {
         console.error("Error initializing map:", error);
-        setMapError("Error initializing map");
-        window.mapInitError = true;
       }
     };
     
@@ -134,59 +115,16 @@ const Map: React.FC<MapProps> = ({
         try {
           const mapInstance = new window.google.maps.Map(mapRef.current, mapOptions);
           setMap(mapInstance);
-          
-          // Add search box functionality if interactive
-          if (interactive && searchInputRef.current) {
-            try {
-              if (window.google.maps.places) {
-                const searchBox = new window.google.maps.places.SearchBox(searchInputRef.current);
-                mapInstance.controls[window.google.maps.ControlPosition.TOP_CENTER].push(searchInputRef.current);
-                
-                mapInstance.addListener('bounds_changed', () => {
-                  searchBox.setBounds(mapInstance.getBounds());
-                });
-                
-                searchBox.addListener('places_changed', () => {
-                  const places = searchBox.getPlaces();
-                  if (places.length === 0) return;
-                  
-                  const place = places[0];
-                  if (!place.geometry || !place.geometry.location) return;
-                  
-                  // If we have a search handler, call it with the place name
-                  if (onSearch) {
-                    onSearch(place.name);
-                  }
-                  
-                  // Center map on the selected place
-                  mapInstance.setCenter(place.geometry.location);
-                  mapInstance.setZoom(16);
-                });
-              }
-            } catch (error) {
-              console.error("Error initializing search box:", error);
-              setMapError("Search functionality limited");
-            }
-          }
-          
-          // Add error listener
-          mapInstance.addListener('error', (e: any) => {
-            console.error("Map error:", e);
-            setMapError("Error displaying the map");
-          });
         } catch (error) {
           console.error("Error creating map instance:", error);
           setMapError("Failed to create map");
-          window.mapInitError = true;
         }
       } else {
         setMapError("Google Maps API not available");
-        window.mapInitError = true;
       }
     } catch (error) {
       console.error("Error initializing Google Maps:", error);
       setMapError("Error initializing Google Maps");
-      window.mapInitError = true;
     }
   }, [isLoaded, center, zoom, interactive, onSearch, mapError]);
 
@@ -253,23 +191,6 @@ const Map: React.FC<MapProps> = ({
     }
   }, [map, center, isLoaded, mapError]);
 
-  // Handle map errors from Google API
-  useEffect(() => {
-    const handleMapErrors = (event: ErrorEvent) => {
-      if (event.error && event.error.toString().includes("Google Maps")) {
-        console.error("Google Maps error detected:", event);
-        setMapError("Google Maps API error. Please check your API key configuration.");
-        window.mapInitError = true;
-      }
-    };
-
-    window.addEventListener('error', handleMapErrors);
-    
-    return () => {
-      window.removeEventListener('error', handleMapErrors);
-    };
-  }, []);
-
   const handleRetryMap = () => {
     // Clear error state and retry loading
     setMapError(null);
@@ -278,15 +199,13 @@ const Map: React.FC<MapProps> = ({
   };
 
   const handleCurrentLocation = () => {
-    if (navigator.geolocation && map && !mapError) {
+    if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const pos = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          map.setCenter(pos);
-          map.setZoom(16);
           
           // If we have a search handler, let's search for parking in this area
           if (onSearch) {
@@ -304,23 +223,20 @@ const Map: React.FC<MapProps> = ({
             description: "Unable to get your current location.",
             variant: "destructive",
           });
+          
+          // Still try to search for generic parking
+          if (onSearch) {
+            onSearch("parking");
+          }
         }
       );
     } else if (onSearch) {
-      onSearch("parking near me");
+      onSearch("parking");
       toast({
         title: "Searching",
         description: "Showing parking spots near you",
       });
     }
-  };
-
-  const handleZoomIn = () => {
-    if (map && !mapError) map.setZoom(map.getZoom() + 1);
-  };
-
-  const handleZoomOut = () => {
-    if (map && !mapError) map.setZoom(map.getZoom() - 1);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -330,7 +246,8 @@ const Map: React.FC<MapProps> = ({
     }
   };
 
-  // If there's a map error, display fallback UI with a static map image
+  // If there's a map error or we're using the fallback, display static UI
+  // This section is important for ensuring we always have a functional interface
   if (mapError) {
     return (
       <div className={`relative overflow-hidden rounded-lg ${className} flex flex-col items-center justify-center bg-gray-100 p-6`}>
@@ -341,6 +258,28 @@ const Map: React.FC<MapProps> = ({
             className="w-full h-full object-cover opacity-20"
           />
         </div>
+        
+        {/* Markers representation on the static map */}
+        {markers && markers.length > 0 && (
+          <div className="absolute top-0 left-0 w-full h-full z-10 pointer-events-none">
+            {markers.map((marker, index) => (
+              <div 
+                key={marker.id}
+                className={`absolute rounded-full w-6 h-6 ${selectedMarkerId === marker.id ? 'bg-park-yellow border-2 border-black' : 'bg-purple-600'} -translate-x-1/2 -translate-y-1/2 cursor-pointer pointer-events-auto`}
+                style={{
+                  top: `${(Math.random() * 60) + 20}%`,
+                  left: `${(Math.random() * 60) + 20}%`,
+                }}
+                onClick={() => onMarkerClick && onMarkerClick(marker.id)}
+              >
+                <div className="flex items-center justify-center h-full">
+                  <MapPin size={16} className="text-white" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
         <div className="relative z-10 text-center p-4 bg-white/80 rounded-lg shadow-md">
           <AlertCircle size={48} className="text-orange-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Map Display Limited</h3>
@@ -425,7 +364,7 @@ const Map: React.FC<MapProps> = ({
             size="icon" 
             variant="outline" 
             className="bg-white shadow-md h-10 w-10"
-            onClick={handleZoomIn}
+            onClick={() => map && map.setZoom(map.getZoom() + 1)}
           >
             <Plus size={20} />
           </Button>
@@ -433,7 +372,7 @@ const Map: React.FC<MapProps> = ({
             size="icon" 
             variant="outline" 
             className="bg-white shadow-md h-10 w-10"
-            onClick={handleZoomOut}
+            onClick={() => map && map.setZoom(map.getZoom() - 1)}
           >
             <Minus size={20} />
           </Button>

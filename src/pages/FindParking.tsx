@@ -23,6 +23,7 @@ const FindParking = () => {
   const [selectedParkingLot, setSelectedParkingLot] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   
   // Get query from location state if available
   const locationState = location.state as LocationState | undefined;
@@ -41,6 +42,8 @@ const FindParking = () => {
     if (!query.trim()) return;
     
     setIsLoading(true);
+    setHasSearched(true);
+    
     try {
       await searchParkingLots(query || "parking");
       toast({
@@ -187,7 +190,7 @@ const FindParking = () => {
           
           {/* Selected Parking Lot Card */}
           {selectedParkingLot && (
-            <div className="absolute bottom-20 left-0 right-0 p-4">
+            <div className="absolute bottom-20 left-0 right-0 p-4 z-50">
               {filteredParkingLots
                 .filter(lot => lot.id === selectedParkingLot)
                 .map(lot => (
@@ -279,11 +282,17 @@ const FindParking = () => {
                 </Card>
               ))}
             </div>
-          ) : (
+          ) : hasSearched ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Car size={48} className="text-gray-300 mb-4" />
               <p className="text-gray-500">No parking spots found</p>
               <p className="text-sm text-gray-400">Try a different search</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Search size={48} className="text-gray-300 mb-4" />
+              <p className="text-gray-500">Search for parking</p>
+              <p className="text-sm text-gray-400">Enter a location to find parking spots</p>
             </div>
           )}
         </div>

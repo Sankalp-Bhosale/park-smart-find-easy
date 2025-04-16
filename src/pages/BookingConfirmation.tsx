@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Check, MapPin, Clock, Calendar, Car, Share2, ChevronLeft, QrCode } from "lucide-react";
+import { Check, MapPin, Clock, Calendar, Car, Share2, ChevronLeft, QrCode, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParking } from "@/context/ParkingContext";
 import { toast } from "@/components/ui/use-toast";
