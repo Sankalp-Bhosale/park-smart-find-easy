@@ -19,7 +19,7 @@ const FindParking = () => {
   const location = useLocation();
   const { nearbyParkingLots, searchParkingLots } = useParking();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTab, setSelectedTab] = useState<"list" | "map">("map");
+  const [selectedTab, setSelectedTab] = useState<"list" | "map">("list"); // Default to list view for reliability
   const [selectedParkingLot, setSelectedParkingLot] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mapError, setMapError] = useState(false);
@@ -31,6 +31,9 @@ const FindParking = () => {
     if (locationState?.query) {
       setSearchQuery(locationState.query);
       handleSearch(locationState.query);
+    } else {
+      // If no specific query, just show some default parking lots
+      handleSearch("parking");
     }
   }, [locationState]);
 
@@ -39,10 +42,10 @@ const FindParking = () => {
     
     setIsLoading(true);
     try {
-      await searchParkingLots(query);
+      await searchParkingLots(query || "parking");
       toast({
         title: "Search completed",
-        description: `Found parking spots near "${query}"`,
+        description: `Found parking spots${query ? ` near "${query}"` : ''}`,
       });
     } catch (error) {
       console.error("Search error:", error);
@@ -75,12 +78,20 @@ const FindParking = () => {
 
   const handleMapError = () => {
     setMapError(true);
+    setSelectedTab("list"); // Switch to list view when map has an error
     toast({
       title: "Map Error",
-      description: "There was an error loading the map. Please try again later.",
+      description: "There was an error loading the map. Switched to list view.",
       variant: "destructive",
     });
   };
+
+  useEffect(() => {
+    // If there's a map error, switch to list view
+    if (mapError) {
+      setSelectedTab("list");
+    }
+  }, [mapError]);
 
   return (
     <div className="min-h-screen bg-white pb-20">
@@ -128,7 +139,7 @@ const FindParking = () => {
         </div>
         
         <Tabs
-          defaultValue="map"
+          defaultValue="list"
           value={selectedTab}
           onValueChange={(value) => setSelectedTab(value as "list" | "map")}
           className="w-full"

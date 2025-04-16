@@ -43,31 +43,48 @@ const Map: React.FC<MapProps> = ({
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [mapError, setMapError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>("fallback"); // Default to fallback mode
 
   // Initialize the map
   useEffect(() => {
-    if (!window.google && !document.getElementById('google-maps-script')) {
-      const script = document.createElement('script');
-      script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyClawIm_JLwUOmt_W7S3wbf2CnAKdj3orI&libraries=places&callback=initMap`;
-      script.async = true;
-      script.defer = true;
-      
-      // Track loading errors
-      script.onerror = () => {
-        setMapError("Failed to load Google Maps API");
-        console.error("Error loading Google Maps script");
-      };
-      
-      window.initMap = () => {
-        setIsLoaded(true);
-      };
-      
-      document.body.appendChild(script);
-    } else if (window.google) {
-      setIsLoaded(true);
-    }
+    const loadGoogleMaps = async () => {
+      try {
+        if (!window.google && !document.getElementById('google-maps-script')) {
+          const script = document.createElement('script');
+          script.id = 'google-maps-script';
+          script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyClawIm_JLwUOmt_W7S3wbf2CnAKdj3orI&libraries=places&callback=initMap`;
+          script.async = true;
+          script.defer = true;
+          
+          // Track loading errors
+          script.onerror = () => {
+            setMapError("Failed to load Google Maps API");
+            console.error("Error loading Google Maps script");
+          };
+          
+          window.initMap = () => {
+            setIsLoaded(true);
+          };
+          
+          document.body.appendChild(script);
+          
+          // Set a timeout to detect if Google Maps doesn't load in reasonable time
+          setTimeout(() => {
+            if (!window.google?.maps) {
+              setMapError("Google Maps failed to load in time");
+              console.error("Google Maps timeout - using fallback");
+            }
+          }, 5000);
+        } else if (window.google) {
+          setIsLoaded(true);
+        }
+      } catch (error) {
+        console.error("Error initializing map:", error);
+        setMapError("Error initializing map");
+      }
+    };
+    
+    loadGoogleMaps();
     
     return () => {
       window.initMap = () => {};
@@ -76,7 +93,7 @@ const Map: React.FC<MapProps> = ({
 
   // Create the map instance once Google Maps is loaded
   useEffect(() => {
-    if (!isLoaded || !mapRef.current || map) return;
+    if (!isLoaded || !mapRef.current || map || mapError) return;
     
     try {
       const mapOptions = {
@@ -100,53 +117,53 @@ const Map: React.FC<MapProps> = ({
       
       // If Google Maps API is loaded properly
       if (window.google && window.google.maps) {
-        const mapInstance = new window.google.maps.Map(mapRef.current, mapOptions);
-        setMap(mapInstance);
-        
-        // Add search box functionality if interactive
-        if (interactive && searchInputRef.current) {
-          try {
-            if (window.google.maps.places) {
-              const searchBox = new window.google.maps.places.SearchBox(searchInputRef.current);
-              mapInstance.controls[window.google.maps.ControlPosition.TOP_CENTER].push(searchInputRef.current);
-              
-              mapInstance.addListener('bounds_changed', () => {
-                searchBox.setBounds(mapInstance.getBounds());
-              });
-              
-              searchBox.addListener('places_changed', () => {
-                const places = searchBox.getPlaces();
-                if (places.length === 0) return;
+        try {
+          const mapInstance = new window.google.maps.Map(mapRef.current, mapOptions);
+          setMap(mapInstance);
+          
+          // Add search box functionality if interactive
+          if (interactive && searchInputRef.current) {
+            try {
+              if (window.google.maps.places) {
+                const searchBox = new window.google.maps.places.SearchBox(searchInputRef.current);
+                mapInstance.controls[window.google.maps.ControlPosition.TOP_CENTER].push(searchInputRef.current);
                 
-                const place = places[0];
-                if (!place.geometry || !place.geometry.location) return;
+                mapInstance.addListener('bounds_changed', () => {
+                  searchBox.setBounds(mapInstance.getBounds());
+                });
                 
-                // If we have a search handler, call it with the place name
-                if (onSearch) {
-                  onSearch(place.name);
-                }
-                
-                // Center map on the selected place
-                mapInstance.setCenter(place.geometry.location);
-                mapInstance.setZoom(16);
-              });
-            } else {
-              console.warn("Google Places API not available");
+                searchBox.addListener('places_changed', () => {
+                  const places = searchBox.getPlaces();
+                  if (places.length === 0) return;
+                  
+                  const place = places[0];
+                  if (!place.geometry || !place.geometry.location) return;
+                  
+                  // If we have a search handler, call it with the place name
+                  if (onSearch) {
+                    onSearch(place.name);
+                  }
+                  
+                  // Center map on the selected place
+                  mapInstance.setCenter(place.geometry.location);
+                  mapInstance.setZoom(16);
+                });
+              }
+            } catch (error) {
+              console.error("Error initializing search box:", error);
+              setMapError("Search functionality limited");
             }
-          } catch (error) {
-            console.error("Error initializing search box:", error);
-            toast({
-              title: "Search functionality limited",
-              description: "Using fallback search mechanism",
-            });
           }
+          
+          // Add error listener
+          mapInstance.addListener('error', (e: any) => {
+            console.error("Map error:", e);
+            setMapError("Error displaying the map");
+          });
+        } catch (error) {
+          console.error("Error creating map instance:", error);
+          setMapError("Failed to create map");
         }
-        
-        // Add error listener
-        mapInstance.addListener('error', (e: any) => {
-          console.error("Map error:", e);
-          setMapError("Error displaying the map");
-        });
       } else {
         setMapError("Google Maps API not available");
       }
@@ -154,11 +171,11 @@ const Map: React.FC<MapProps> = ({
       console.error("Error initializing Google Maps:", error);
       setMapError("Error initializing Google Maps");
     }
-  }, [isLoaded, center, zoom, interactive, onSearch]);
+  }, [isLoaded, center, zoom, interactive, onSearch, mapError]);
 
   // Update markers whenever the markers prop changes
   useEffect(() => {
-    if (!map || !isLoaded || !window.google) return;
+    if (!map || !isLoaded || !window.google || mapError) return;
     
     try {
       // Clear existing markers
@@ -208,15 +225,16 @@ const Map: React.FC<MapProps> = ({
       setGoogleMarkers(newMarkers);
     } catch (error) {
       console.error("Error creating markers:", error);
+      setMapError("Failed to create map markers");
     }
   }, [map, markers, selectedMarkerId, isLoaded, onMarkerClick]);
 
   // Update map center when center prop changes
   useEffect(() => {
-    if (map && isLoaded && window.google) {
+    if (map && isLoaded && window.google && !mapError) {
       map.setCenter(center);
     }
-  }, [map, center, isLoaded]);
+  }, [map, center, isLoaded, mapError]);
 
   // Handle map errors from Google API
   useEffect(() => {
@@ -235,7 +253,7 @@ const Map: React.FC<MapProps> = ({
   }, []);
 
   const handleCurrentLocation = () => {
-    if (navigator.geolocation && map) {
+    if (navigator.geolocation && map && !mapError) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const pos = {
@@ -263,15 +281,21 @@ const Map: React.FC<MapProps> = ({
           });
         }
       );
+    } else if (onSearch) {
+      onSearch("parking near me");
+      toast({
+        title: "Searching",
+        description: "Showing parking spots near you",
+      });
     }
   };
 
   const handleZoomIn = () => {
-    if (map) map.setZoom(map.getZoom() + 1);
+    if (map && !mapError) map.setZoom(map.getZoom() + 1);
   };
 
   const handleZoomOut = () => {
-    if (map) map.setZoom(map.getZoom() - 1);
+    if (map && !mapError) map.setZoom(map.getZoom() - 1);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -298,8 +322,7 @@ const Map: React.FC<MapProps> = ({
           <p className="text-sm text-gray-600 mb-4">
             The interactive map is currently unavailable. We're using a static map view.
           </p>
-          <p className="text-xs text-gray-500 max-w-md">
-            This might be due to API key restrictions or billing not being enabled.
+          <p className="text-xs text-gray-500 max-w-md mb-4">
             You can still search and view parking locations.
           </p>
           
