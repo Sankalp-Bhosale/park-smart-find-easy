@@ -1,27 +1,19 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/components/ui/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/home");
-    }
-  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,14 +24,9 @@ const Login = () => {
     }
     
     setIsLoading(true);
-    setError("");
     
     try {
       await login(email, password);
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
       navigate("/home");
     } catch (error) {
       setError("Invalid email or password");
@@ -58,10 +45,6 @@ const Login = () => {
     setIsLoading(true);
     try {
       await login("demo@parksmart.com", "password");
-      toast({
-        title: "Demo login successful",
-        description: "Welcome to ParkSmart!",
-      });
       navigate("/home");
     } catch (error) {
       setError("Demo login failed");

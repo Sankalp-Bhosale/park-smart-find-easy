@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OnboardingSlide {
   title: string;
@@ -41,8 +40,6 @@ const Onboarding = () => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
-      // Mark onboarding as complete
-      localStorage.setItem("hasSeenOnboarding", "true");
       navigate("/register");
     }
   };
@@ -54,13 +51,11 @@ const Onboarding = () => {
   };
 
   const goToLogin = () => {
-    // Mark onboarding as complete
-    localStorage.setItem("hasSeenOnboarding", "true");
     navigate("/login");
   };
 
   return (
-    <ScrollArea className={`min-h-screen ${slides[currentSlide].bgColor} flex flex-col`}>
+    <div className={`min-h-screen ${slides[currentSlide].bgColor} flex flex-col`}>
       {currentSlide > 0 && (
         <Button
           variant="ghost"
@@ -118,7 +113,7 @@ const Onboarding = () => {
           )}
         </Button>
       </div>
-    </ScrollArea>
+    </div>
   );
 };
 
