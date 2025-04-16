@@ -62,8 +62,8 @@ interface ParkingContextType {
   removeFavoriteLocation: (location: string) => void;
   selectedSlot: ParkingSlot | null;
   setSelectedSlot: (slot: ParkingSlot | null) => void;
-  temporaryVehicleDetails: { model: string; licensePlate: string; type?: string } | null;
-  setTemporaryVehicleDetails: (details: { model: string; licensePlate: string; type?: string } | null) => void;
+  temporaryVehicleDetails: { model: string; licensePlate: string; type: string } | null;
+  setTemporaryVehicleDetails: (details: { model: string; licensePlate: string; type: string } | null) => void;
 }
 
 // Generate parking slots for a lot
@@ -232,7 +232,7 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [favoriteLocations, setFavoriteLocations] = useState<string[]>(["Andheri East", "Bandra West"]);
   const [selectedSlot, setSelectedSlot] = useState<ParkingSlot | null>(null);
-  const [temporaryVehicleDetails, setTemporaryVehicleDetails] = useState<{ model: string; licensePlate: string; type?: string } | null>(null);
+  const [temporaryVehicleDetails, setTemporaryVehicleDetails] = useState<{ model: string; licensePlate: string; type: string } | null>(null);
 
   // Search for parking lots near a location
   const searchParkingLots = async (location: string): Promise<ParkingLot[]> => {
@@ -272,10 +272,15 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
 
   // Create a reservation
   const createReservation = async (reservationData: Omit<Reservation, "id" | "status">): Promise<Reservation> => {
+    // Generate a spotNumber if one doesn't exist
+    const spotNumber = reservationData.spotNumber || 
+                      (reservationData.slotName ? reservationData.slotName : `A${Math.floor(Math.random() * 100)}`);
+    
     const newReservation: Reservation = {
       ...reservationData,
       id: `res-${Date.now()}`,
-      status: "confirmed"
+      status: "confirmed",
+      spotNumber: spotNumber
     };
     
     setReservations(prev => [...prev, newReservation]);

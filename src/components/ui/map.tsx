@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { MapPin, Navigation, Search, Plus, Minus, Compass, AlertCircle } from "lucide-react";
 import { Button } from "./button";
-import { toast } from "./use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 // Google Maps integration
 interface MapProps {
@@ -24,6 +24,7 @@ declare global {
   interface Window {
     google: any;
     initMap: () => void;
+    mapInitError?: boolean;
   }
 }
 
@@ -43,12 +44,20 @@ const Map: React.FC<MapProps> = ({
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [mapError, setMapError] = useState<string | null>("fallback"); // Default to fallback mode
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [loadRetry, setLoadRetry] = useState(0);
 
   // Initialize the map
   useEffect(() => {
     const loadGoogleMaps = async () => {
       try {
+        // Check if we've previously seen an error with Google Maps
+        if (window.mapInitError) {
+          console.log("Using fallback map due to previous initialization error");
+          setMapError("Using fallback map due to previous initialization error");
+          return;
+        }
+
         if (!window.google && !document.getElementById('google-maps-script')) {
           const script = document.createElement('script');
           script.id = 'google-maps-script';
@@ -58,8 +67,9 @@ const Map: React.FC<MapProps> = ({
           
           // Track loading errors
           script.onerror = () => {
-            setMapError("Failed to load Google Maps API");
             console.error("Error loading Google Maps script");
+            setMapError("Failed to load Google Maps API");
+            window.mapInitError = true;
           };
           
           window.initMap = () => {
@@ -69,18 +79,22 @@ const Map: React.FC<MapProps> = ({
           document.body.appendChild(script);
           
           // Set a timeout to detect if Google Maps doesn't load in reasonable time
-          setTimeout(() => {
+          const timeoutId = setTimeout(() => {
             if (!window.google?.maps) {
-              setMapError("Google Maps failed to load in time");
               console.error("Google Maps timeout - using fallback");
+              setMapError("Google Maps failed to load in time");
+              window.mapInitError = true;
             }
           }, 5000);
+          
+          return () => clearTimeout(timeoutId);
         } else if (window.google) {
           setIsLoaded(true);
         }
       } catch (error) {
         console.error("Error initializing map:", error);
         setMapError("Error initializing map");
+        window.mapInitError = true;
       }
     };
     
@@ -89,7 +103,7 @@ const Map: React.FC<MapProps> = ({
     return () => {
       window.initMap = () => {};
     };
-  }, []);
+  }, [loadRetry]);
 
   // Create the map instance once Google Maps is loaded
   useEffect(() => {
@@ -163,13 +177,16 @@ const Map: React.FC<MapProps> = ({
         } catch (error) {
           console.error("Error creating map instance:", error);
           setMapError("Failed to create map");
+          window.mapInitError = true;
         }
       } else {
         setMapError("Google Maps API not available");
+        window.mapInitError = true;
       }
     } catch (error) {
       console.error("Error initializing Google Maps:", error);
       setMapError("Error initializing Google Maps");
+      window.mapInitError = true;
     }
   }, [isLoaded, center, zoom, interactive, onSearch, mapError]);
 
@@ -240,8 +257,9 @@ const Map: React.FC<MapProps> = ({
   useEffect(() => {
     const handleMapErrors = (event: ErrorEvent) => {
       if (event.error && event.error.toString().includes("Google Maps")) {
-        setMapError("Google Maps API error. Please check your API key configuration.");
         console.error("Google Maps error detected:", event);
+        setMapError("Google Maps API error. Please check your API key configuration.");
+        window.mapInitError = true;
       }
     };
 
@@ -251,6 +269,13 @@ const Map: React.FC<MapProps> = ({
       window.removeEventListener('error', handleMapErrors);
     };
   }, []);
+
+  const handleRetryMap = () => {
+    // Clear error state and retry loading
+    setMapError(null);
+    window.mapInitError = false;
+    setLoadRetry(prev => prev + 1);
+  };
 
   const handleCurrentLocation = () => {
     if (navigator.geolocation && map && !mapError) {
@@ -322,9 +347,14 @@ const Map: React.FC<MapProps> = ({
           <p className="text-sm text-gray-600 mb-4">
             The interactive map is currently unavailable. We're using a static map view.
           </p>
-          <p className="text-xs text-gray-500 max-w-md mb-4">
-            You can still search and view parking locations.
-          </p>
+          <Button 
+            onClick={handleRetryMap}
+            variant="outline"
+            size="sm"
+            className="mb-4"
+          >
+            Retry Loading Map
+          </Button>
           
           {onSearch && (
             <form onSubmit={handleSearchSubmit} className="mt-4">

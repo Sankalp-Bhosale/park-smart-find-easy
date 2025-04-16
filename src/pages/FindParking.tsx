@@ -141,11 +141,22 @@ const FindParking = () => {
         <Tabs
           defaultValue="list"
           value={selectedTab}
-          onValueChange={(value) => setSelectedTab(value as "list" | "map")}
+          onValueChange={(value) => {
+            // Only allow switching to map if there's no map error
+            if (value === "map" && mapError) {
+              toast({
+                title: "Map Unavailable",
+                description: "Map view is currently unavailable. Using list view instead.",
+                variant: "destructive",
+              });
+            } else {
+              setSelectedTab(value as "list" | "map");
+            }
+          }}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="map">Map</TabsTrigger>
+            <TabsTrigger value="map" disabled={mapError}>Map</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
           </TabsList>
         </Tabs>

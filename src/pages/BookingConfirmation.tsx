@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Check, MapPin, Clock, Calendar, Car, Share2, ChevronLeft, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParking } from "@/context/ParkingContext";
+import { toast } from "@/components/ui/use-toast";
 
 const BookingConfirmation = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,11 @@ const BookingConfirmation = () => {
 
   useEffect(() => {
     if (!reservation) {
+      toast({
+        title: "Booking not found",
+        description: "Unable to find your booking details",
+        variant: "destructive"
+      });
       navigate("/history");
     } else if (!parkingLot) {
       const lot = getParkingLotById(reservation.parkingLotId);
@@ -41,6 +47,29 @@ const BookingConfirmation = () => {
       minute: '2-digit',
       hour12: true 
     });
+  };
+
+  // Share booking details
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'My Parking Reservation',
+        text: `I've booked a parking spot at ${parkingLot.name} for ${formatDate(reservation.startTime)} at ${formatTime(reservation.startTime)}`,
+        url: window.location.href,
+      })
+      .catch((error) => {
+        toast({
+          title: "Share failed",
+          description: "Unable to share booking details",
+          variant: "destructive",
+        });
+      });
+    } else {
+      toast({
+        title: "Share",
+        description: "Sharing booking details",
+      });
+    }
   };
 
   // Generate a pseudo-QR code for the parking (in real app, this would be a QR code generator)
@@ -169,6 +198,7 @@ const BookingConfirmation = () => {
         <Button 
           variant="outline"
           className="w-full mt-8 border-gray-300"
+          onClick={handleShare}
         >
           <Share2 size={18} className="mr-2" />
           Share Booking Details
