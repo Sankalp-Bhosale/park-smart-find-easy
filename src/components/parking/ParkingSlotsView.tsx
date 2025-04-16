@@ -1,7 +1,7 @@
 
 import { useParking } from "@/context/ParkingContext";
 import { useState } from "react";
-import { Car, Users, Battery, Wheelchair } from "lucide-react";
+import { Car, Users, Battery, Accessibility } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 interface ParkingSlotsViewProps {
@@ -23,7 +23,7 @@ const ParkingSlotsView = ({ parkingLotId }: ParkingSlotsViewProps) => {
 
   const slotTypes = [
     { id: "standard", label: "Standard", icon: <Car size={16} /> },
-    { id: "disabled", label: "Disabled", icon: <Wheelchair size={16} /> },
+    { id: "disabled", label: "Disabled", icon: <Accessibility size={16} /> },
     { id: "electric", label: "Electric", icon: <Battery size={16} /> },
     { id: "family", label: "Family", icon: <Users size={16} /> },
   ];
@@ -103,7 +103,7 @@ const ParkingSlotsView = ({ parkingLotId }: ParkingSlotsViewProps) => {
                 ${slot.isAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 cursor-not-allowed'}`}
             >
               <span className="text-xs">{slot.name}</span>
-              {slot.type === "disabled" && <Wheelchair size={12} />}
+              {slot.type === "disabled" && <Accessibility size={12} />}
               {slot.type === "electric" && <Battery size={12} />}
               {slot.type === "family" && <Users size={12} />}
             </button>

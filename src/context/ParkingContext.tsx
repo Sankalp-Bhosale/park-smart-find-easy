@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode } from "react";
 
 // Types
@@ -36,6 +35,7 @@ interface Reservation {
   parkingLotName: string;
   slotId?: string;
   slotName?: string;
+  spotNumber?: string;
   startTime: Date;
   endTime: Date;
   duration: number;
@@ -62,8 +62,8 @@ interface ParkingContextType {
   removeFavoriteLocation: (location: string) => void;
   selectedSlot: ParkingSlot | null;
   setSelectedSlot: (slot: ParkingSlot | null) => void;
-  temporaryVehicleDetails: { model: string; licensePlate: string } | null;
-  setTemporaryVehicleDetails: (details: { model: string; licensePlate: string } | null) => void;
+  temporaryVehicleDetails: { model: string; licensePlate: string; type?: string } | null;
+  setTemporaryVehicleDetails: (details: { model: string; licensePlate: string; type?: string } | null) => void;
 }
 
 // Generate parking slots for a lot
@@ -232,7 +232,7 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [favoriteLocations, setFavoriteLocations] = useState<string[]>(["Andheri East", "Bandra West"]);
   const [selectedSlot, setSelectedSlot] = useState<ParkingSlot | null>(null);
-  const [temporaryVehicleDetails, setTemporaryVehicleDetails] = useState<{ model: string; licensePlate: string } | null>(null);
+  const [temporaryVehicleDetails, setTemporaryVehicleDetails] = useState<{ model: string; licensePlate: string; type?: string } | null>(null);
 
   // Search for parking lots near a location
   const searchParkingLots = async (location: string): Promise<ParkingLot[]> => {

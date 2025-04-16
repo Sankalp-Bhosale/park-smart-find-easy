@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Car } from "lucide-react";
 import { useParking } from "@/context/ParkingContext";
 import { toast } from "@/components/ui/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface VehicleDetailsFormProps {
   onSubmit: () => void;
@@ -15,6 +16,7 @@ const VehicleDetailsForm = ({ onSubmit }: VehicleDetailsFormProps) => {
   const { setTemporaryVehicleDetails } = useParking();
   const [model, setModel] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
+  const [vehicleType, setVehicleType] = useState("sedan");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,7 +36,8 @@ const VehicleDetailsForm = ({ onSubmit }: VehicleDetailsFormProps) => {
     // Save the vehicle details in the context for later use
     setTemporaryVehicleDetails({
       model: model.trim(),
-      licensePlate: licensePlate.trim()
+      licensePlate: licensePlate.trim(),
+      type: vehicleType
     });
     
     // Simulate a short delay
@@ -61,6 +64,21 @@ const VehicleDetailsForm = ({ onSubmit }: VehicleDetailsFormProps) => {
             onChange={(e) => setModel(e.target.value)}
             required
           />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="vehicleType">Vehicle Type</Label>
+          <Select value={vehicleType} onValueChange={setVehicleType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select vehicle type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sedan">Sedan</SelectItem>
+              <SelectItem value="suv">SUV</SelectItem>
+              <SelectItem value="hatchback">Hatchback</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
         <div className="space-y-2">
