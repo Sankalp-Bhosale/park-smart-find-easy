@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, ReactNode } from "react";
 
 // Types
@@ -154,7 +155,7 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
     hourlyRate: 50,
     dailyRate: 150,
     distance: 0.5,
-    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
+    images: ["/lovable-uploads/40da5286-6726-44b4-8089-65e57c79f277.png"],
     rating: 4.2,
     amenities: ["EV Charging", "Security", "Camera", "Covered"],
     operatingHours: "Open Now: 10:00 AM - 11:30 PM"
@@ -169,7 +170,7 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
     hourlyRate: 60,
     dailyRate: 200,
     distance: 1.2,
-    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
+    images: ["/lovable-uploads/40da5286-6726-44b4-8089-65e57c79f277.png"],
     rating: 4.5,
     amenities: ["Covered", "Security", "Valet", "EV Charging"],
     operatingHours: "Open 24 Hours"
@@ -184,7 +185,7 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
     hourlyRate: 40,
     dailyRate: 120,
     distance: 2.5,
-    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
+    images: ["/lovable-uploads/40da5286-6726-44b4-8089-65e57c79f277.png"],
     rating: 3.8,
     amenities: ["Open Air", "Security"],
     operatingHours: "6:00 AM - 12:00 AM"
@@ -199,7 +200,7 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
     hourlyRate: 30,
     dailyRate: 100,
     distance: 1.8,
-    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
+    images: ["/lovable-uploads/40da5286-6726-44b4-8089-65e57c79f277.png"],
     rating: 3.5,
     amenities: ["Open Air", "CCTV", "24/7 Security"],
     operatingHours: "Open 24 Hours"
@@ -214,7 +215,7 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
     hourlyRate: 70,
     dailyRate: 250,
     distance: 3.2,
-    images: ["/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png"],
+    images: ["/lovable-uploads/40da5286-6726-44b4-8089-65e57c79f277.png"],
     rating: 4.7,
     amenities: ["Covered", "Security", "Valet", "Car Wash", "EV Charging"],
     operatingHours: "9:00 AM - 11:00 PM"
