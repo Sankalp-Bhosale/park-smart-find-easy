@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart, Calendar, AlertCircle } from "lucide-react";
@@ -18,7 +17,6 @@ const ParkingDetails = () => {
   const [selectedDuration, setSelectedDuration] = useState<number>(1);
   const [totalCost, setTotalCost] = useState<number>(0);
   const [activeTab, setActiveTab] = useState("details");
-  const [mapError, setMapError] = useState(false);
 
   useEffect(() => {
     if (!parkingLot) {
@@ -52,17 +50,11 @@ const ParkingDetails = () => {
     );
   };
 
-  const handleMapError = () => {
-    setMapError(true);
-    toast("There was an error loading the map, but you can still view all details.");
-  };
-
   const durations = [1, 2, 3, 4];
 
   const handleBookNow = () => {
     if (!selectedSlot) {
       setActiveTab("slots");
-      // Fix: Changed from object format to plain string for toast message
       toast("Please select a parking slot before proceeding");
       return;
     }
