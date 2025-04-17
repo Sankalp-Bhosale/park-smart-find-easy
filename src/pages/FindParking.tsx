@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, Search, MapPin, Filter, Car, Clock, AlertCircle } from "lucide-react";
@@ -8,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useParking } from "@/context/ParkingContext";
 import { Map } from "@/components/ui/map";
 import BottomNav from "@/components/navigation/BottomNav";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/sonner";
 
 interface LocationState {
   query?: string;
@@ -46,17 +45,10 @@ const FindParking = () => {
     
     try {
       await searchParkingLots(query || "parking");
-      toast({
-        title: "Search completed",
-        description: `Found parking spots${query ? ` near "${query}"` : ''}`,
-      });
+      toast("Found parking spots" + (query ? ` near "${query}"` : ''));
     } catch (error) {
       console.error("Search error:", error);
-      toast({
-        title: "Search error",
-        description: "Unable to find parking spots. Please try again.",
-        variant: "destructive",
-      });
+      toast("Unable to find parking spots. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -82,11 +74,7 @@ const FindParking = () => {
   const handleMapError = () => {
     setMapError(true);
     setSelectedTab("list"); // Switch to list view when map has an error
-    toast({
-      title: "Map Error",
-      description: "There was an error loading the map. Switched to list view.",
-      variant: "destructive",
-    });
+    toast("There was an error loading the map. Switched to list view.");
   };
 
   useEffect(() => {
@@ -131,10 +119,7 @@ const FindParking = () => {
             size="icon" 
             className="ml-2"
             onClick={() => {
-              toast({
-                title: "Filters",
-                description: "Filter functionality coming soon!",
-              });
+              toast("Filter functionality coming soon!");
             }}
           >
             <Filter size={20} />
@@ -147,11 +132,7 @@ const FindParking = () => {
           onValueChange={(value) => {
             // Only allow switching to map if there's no map error
             if (value === "map" && mapError) {
-              toast({
-                title: "Map Unavailable",
-                description: "Map view is currently unavailable. Using list view instead.",
-                variant: "destructive",
-              });
+              toast("Map view is currently unavailable. Using list view instead.");
             } else {
               setSelectedTab(value as "list" | "map");
             }

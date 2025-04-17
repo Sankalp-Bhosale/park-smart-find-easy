@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart, Calendar, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParking } from "@/context/ParkingContext";
 import { Map } from "@/components/ui/map";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ParkingSlotsView from "@/components/parking/ParkingSlotsView";
 
@@ -29,7 +28,6 @@ const ParkingDetails = () => {
         variant: "destructive",
       });
     } else {
-      // Calculate initial cost
       setTotalCost(calculateParkingCost(parkingLot.id, selectedDuration));
     }
   }, [parkingLot, navigate]);
@@ -45,29 +43,21 @@ const ParkingDetails = () => {
   }
 
   const handleShareClick = () => {
-    toast({
-      title: "Share",
-      description: `Sharing link to ${parkingLot.name}`,
-    });
+    toast(`Sharing link to ${parkingLot.name}`);
   };
 
   const handleFavoriteClick = () => {
     setIsFavorite(!isFavorite);
-    toast({
-      title: isFavorite ? "Removed from favorites" : "Added to favorites",
-      description: isFavorite ? 
-        `${parkingLot.name} has been removed from your favorites` :
-        `${parkingLot.name} has been added to your favorites`,
-    });
+    toast(
+      isFavorite 
+        ? `${parkingLot.name} has been removed from your favorites` 
+        : `${parkingLot.name} has been added to your favorites`
+    );
   };
 
   const handleMapError = () => {
     setMapError(true);
-    toast({
-      title: "Map Error",
-      description: "There was an error loading the map, but you can still view all details.",
-      variant: "destructive",
-    });
+    toast("There was an error loading the map, but you can still view all details.");
   };
 
   const durations = [1, 2, 3, 4];
@@ -87,7 +77,6 @@ const ParkingDetails = () => {
 
   return (
     <div className="min-h-screen bg-white relative flex flex-col">
-      {/* Back Button */}
       <Button
         variant="outline"
         size="icon"
@@ -97,7 +86,6 @@ const ParkingDetails = () => {
         <ChevronLeft size={20} />
       </Button>
       
-      {/* Action Buttons */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <Button
           variant="outline"
@@ -120,7 +108,6 @@ const ParkingDetails = () => {
         </Button>
       </div>
 
-      {/* Map Preview */}
       <div className="h-64 w-full">
         <Map
           className="h-full"
@@ -137,7 +124,6 @@ const ParkingDetails = () => {
         />
       </div>
 
-      {/* Details Card */}
       <div className="flex-grow bg-white rounded-t-3xl -mt-8 p-6 z-10 shadow-lg">
         <div className="mb-6">
           <h1 className="text-2xl font-bold mb-2">{parkingLot.name}</h1>
@@ -156,7 +142,6 @@ const ParkingDetails = () => {
           )}
         </div>
 
-        {/* Tabs for Details */}
         <Tabs 
           defaultValue="details" 
           value={activeTab}
@@ -230,7 +215,6 @@ const ParkingDetails = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Selected Slot Info (if any) */}
         {selectedSlot && (
           <div className="mb-6 p-4 border border-park-yellow rounded-lg bg-park-yellow/10">
             <h3 className="font-medium mb-2">Selected Slot</h3>
@@ -243,7 +227,6 @@ const ParkingDetails = () => {
           </div>
         )}
 
-        {/* Select Parking Duration */}
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-3">Select Parking Duration</h2>
           <div className="grid grid-cols-4 gap-2">
@@ -263,7 +246,6 @@ const ParkingDetails = () => {
           </div>
         </div>
 
-        {/* Price Information */}
         <div className="mb-6 bg-gray-50 p-4 rounded-lg">
           <div className="flex justify-between items-center">
             <div>
@@ -277,7 +259,6 @@ const ParkingDetails = () => {
           </div>
         </div>
 
-        {/* Book Button */}
         <Button 
           className="w-full bg-park-yellow text-black font-bold py-6 rounded-xl"
           onClick={handleBookNow}

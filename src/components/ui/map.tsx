@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { MapPin, Navigation, Search, Plus, Minus, Compass, AlertCircle, Car } from "lucide-react";
 import { Button } from "./button";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/sonner";
 
 // Google Maps integration
 interface MapProps {
@@ -51,17 +51,26 @@ const Map: React.FC<MapProps> = ({
   useEffect(() => {
     // Since we're seeing consistent Google Maps API errors, let's default to the static map
     setMapError("Using static map due to Google Maps API limitations");
-    // We're not setting window.mapInitError = true to allow future retries
     
     // Still try to load Google Maps in the background for users who might have it working
     const loadGoogleMaps = async () => {
       try {
         if (!window.google && !document.getElementById('google-maps-script')) {
+          // Hide Google Maps error popup by adding error handler before script loads
+          window.gm_authFailure = () => {
+            console.error("Google Maps authentication failed");
+            setMapError("Maps authentication failed");
+          };
+          
           const script = document.createElement('script');
           script.id = 'google-maps-script';
           script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyClawIm_JLwUOmt_W7S3wbf2CnAKdj3orI&libraries=places&callback=initMap`;
           script.async = true;
           script.defer = true;
+          script.onerror = () => {
+            console.error("Error loading Google Maps script");
+            setMapError("Error loading maps");
+          };
           
           window.initMap = () => {
             setIsLoaded(true);
@@ -83,6 +92,7 @@ const Map: React.FC<MapProps> = ({
     
     return () => {
       window.initMap = () => {};
+      window.gm_authFailure = undefined;
     };
   }, [loadRetry]);
 
@@ -210,18 +220,14 @@ const Map: React.FC<MapProps> = ({
           // If we have a search handler, let's search for parking in this area
           if (onSearch) {
             onSearch("parking near me");
-            toast({
-              title: "Location Found",
-              description: "Showing parking spots near your current location",
-            });
+            toast("Showing parking spots near your current location");
           }
         },
         () => {
           console.error("Error: The Geolocation service failed.");
           toast({
             title: "Location Error",
-            description: "Unable to get your current location.",
-            variant: "destructive",
+            description: "Unable to get your current location."
           });
           
           // Still try to search for generic parking
@@ -232,10 +238,7 @@ const Map: React.FC<MapProps> = ({
       );
     } else if (onSearch) {
       onSearch("parking");
-      toast({
-        title: "Searching",
-        description: "Showing parking spots near you",
-      });
+      toast("Showing parking spots near you");
     }
   };
 
@@ -280,44 +283,7 @@ const Map: React.FC<MapProps> = ({
           </div>
         )}
         
-        <div className="relative z-10 text-center p-4 bg-white/80 rounded-lg shadow-md">
-          <AlertCircle size={48} className="text-orange-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Map Display Limited</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            The interactive map is currently unavailable. We're using a static map view.
-          </p>
-          <Button 
-            onClick={handleRetryMap}
-            variant="outline"
-            size="sm"
-            className="mb-4"
-          >
-            Retry Loading Map
-          </Button>
-          
-          {onSearch && (
-            <form onSubmit={handleSearchSubmit} className="mt-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Where do you want to park?"
-                  className="w-full h-12 pl-10 pr-4 rounded-full border border-gray-300 text-sm"
-                />
-                <Button 
-                  type="submit" 
-                  variant="ghost" 
-                  size="sm" 
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 px-3 text-xs bg-park-yellow text-black rounded-full"
-                >
-                  Search
-                </Button>
-              </div>
-            </form>
-          )}
-        </div>
+        {/* Remove the error popup, just show markers on static map background */}
         
         {interactive && (
           <div className="absolute bottom-4 right-4 flex gap-2">
