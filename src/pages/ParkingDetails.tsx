@@ -62,9 +62,8 @@ const ParkingDetails = () => {
   const handleBookNow = () => {
     if (!selectedSlot) {
       setActiveTab("slots");
-      toast({
-        description: "Please select a parking slot before proceeding"
-      });
+      // Fix: Changed from object format to plain string for toast message
+      toast("Please select a parking slot before proceeding");
       return;
     }
     

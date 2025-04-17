@@ -227,9 +227,8 @@ const Map: React.FC<MapProps> = ({
         },
         () => {
           console.error("Error: The Geolocation service failed.");
-          toast({
-            description: "Unable to get your current location."
-          });
+          // Fix: Changed from object format to string format for toast
+          toast("Unable to get your current location.");
           
           // Still try to search for generic parking
           if (onSearch) {
