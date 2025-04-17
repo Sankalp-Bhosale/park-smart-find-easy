@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart, Calendar, AlertCircle } from "lucide-react";
@@ -22,11 +23,7 @@ const ParkingDetails = () => {
   useEffect(() => {
     if (!parkingLot) {
       navigate("/find-parking");
-      toast({
-        title: "Error",
-        description: "Parking lot not found",
-        variant: "destructive",
-      });
+      toast("Parking lot not found");
     } else {
       setTotalCost(calculateParkingCost(parkingLot.id, selectedDuration));
     }
@@ -66,7 +63,6 @@ const ParkingDetails = () => {
     if (!selectedSlot) {
       setActiveTab("slots");
       toast({
-        title: "Select a slot",
         description: "Please select a parking slot before proceeding"
       });
       return;

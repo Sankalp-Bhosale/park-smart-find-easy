@@ -4,6 +4,16 @@ import { MapPin, Navigation, Search, Plus, Minus, Compass, AlertCircle, Car } fr
 import { Button } from "./button";
 import { toast } from "@/components/ui/sonner";
 
+// Extend Window interface to include Google Maps properties
+declare global {
+  interface Window {
+    google: any;
+    initMap: () => void;
+    mapInitError?: boolean;
+    gm_authFailure?: () => void; // Add this to fix the TypeScript error
+  }
+}
+
 // Google Maps integration
 interface MapProps {
   center?: { lat: number; lng: number };
@@ -18,14 +28,6 @@ interface MapProps {
   className?: string;
   interactive?: boolean;
   onSearch?: (query: string) => void;
-}
-
-declare global {
-  interface Window {
-    google: any;
-    initMap: () => void;
-    mapInitError?: boolean;
-  }
 }
 
 const Map: React.FC<MapProps> = ({
@@ -226,7 +228,6 @@ const Map: React.FC<MapProps> = ({
         () => {
           console.error("Error: The Geolocation service failed.");
           toast({
-            title: "Location Error",
             description: "Unable to get your current location."
           });
           
