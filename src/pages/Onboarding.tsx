@@ -19,19 +19,19 @@ const Onboarding = () => {
     {
       title: "Find the nearest parking lot",
       description: "Avoid parking hassle by finding a parking spot near you",
-      image: "/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png",
+      image: "/lovable-uploads/8960cfb7-2168-426c-b982-5df8892c3cc6.png",
       bgColor: "bg-park-yellow",
     },
     {
       title: "Book your Slot on the go",
       description: "Reserve your spot and enjoy hassle-free parking",
-      image: "/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png",
+      image: "/lovable-uploads/8960cfb7-2168-426c-b982-5df8892c3cc6.png",
       bgColor: "bg-park-yellow",
     },
     {
       title: "Search, Discover & Park",
       description: "Reserve your spot and enjoy hassle-free parking",
-      image: "/lovable-uploads/50563028-a53f-4a0b-b78f-a3001097274d.png",
+      image: "/lovable-uploads/8960cfb7-2168-426c-b982-5df8892c3cc6.png",
       bgColor: "bg-park-yellow",
     },
   ];
