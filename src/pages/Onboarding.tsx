@@ -1,11 +1,12 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Carousel,
   CarouselContent,
-  CarouselItem
+  CarouselItem,
+  type CarouselApi
 } from "@/components/ui/carousel";
 
 interface OnboardingSlide {
@@ -22,6 +23,7 @@ interface OnboardingSlide {
 const Onboarding = () => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
   const [autoSlideInterval, setAutoSlideInterval] = useState<NodeJS.Timeout | null>(null);
   
   const slides: OnboardingSlide[] = [
@@ -49,6 +51,25 @@ const Onboarding = () => {
     },
   ];
 
+  // When the carousel API is available
+  useEffect(() => {
+    if (!carouselApi) return;
+    
+    // Update currentSlide when the carousel changes
+    const handleSelect = () => {
+      setCurrentSlide(carouselApi.selectedScrollSnap());
+    };
+    
+    carouselApi.on("select", handleSelect);
+    
+    // Go to the current slide (in case we need to sync)
+    carouselApi.scrollTo(currentSlide);
+    
+    return () => {
+      carouselApi.off("select", handleSelect);
+    };
+  }, [carouselApi, currentSlide]);
+
   const startAutoSlide = useCallback(() => {
     // Clear any existing interval
     if (autoSlideInterval) {
@@ -64,13 +85,18 @@ const Onboarding = () => {
         if (nextSlide === slides.length - 1) {
           clearInterval(interval);
         }
+
+        // Update the carousel position if API is available
+        if (carouselApi) {
+          carouselApi.scrollTo(nextSlide);
+        }
         
         return nextSlide;
       });
     }, 5000); // Change slide every 5 seconds
     
     setAutoSlideInterval(interval);
-  }, [slides.length, autoSlideInterval]);
+  }, [slides.length, autoSlideInterval, carouselApi]);
 
   // Start auto-slide on component mount
   useEffect(() => {
@@ -86,6 +112,9 @@ const Onboarding = () => {
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
+    if (carouselApi) {
+      carouselApi.scrollTo(index);
+    }
     
     // Reset auto-slide after manual navigation
     startAutoSlide();
@@ -93,7 +122,11 @@ const Onboarding = () => {
 
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
-      setCurrentSlide(currentSlide + 1);
+      const nextSlide = currentSlide + 1;
+      setCurrentSlide(nextSlide);
+      if (carouselApi) {
+        carouselApi.scrollTo(nextSlide);
+      }
       startAutoSlide();
     } else {
       navigate("/register");
@@ -106,7 +139,7 @@ const Onboarding = () => {
 
   return (
     <div className="h-screen overflow-hidden">
-      <Carousel className="h-full w-full" index={currentSlide} setIndex={setCurrentSlide}>
+      <Carousel className="h-full w-full" setApi={setCarouselApi}>
         <CarouselContent className="h-full">
           {slides.map((slide, index) => (
             <CarouselItem key={index} className="h-full">
