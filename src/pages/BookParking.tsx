@@ -1,17 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParking } from "@/context/ParkingContext";
 import VehicleDetailsForm from "@/components/parking/VehicleDetailsForm";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/sonner";
 
 const BookParking = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { getParkingLotById, calculateParkingCost, selectedSlot } = useParking();
+  const { getParkingLotById, calculateParkingCost, selectedSlot, setSelectedSlot } = useParking();
   const parkingLot = getParkingLotById(id || "");
   
   const preSelectedDuration = searchParams.get('duration') 
@@ -24,19 +23,28 @@ const BookParking = () => {
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const durations = [1, 2, 3, 4, 5, 8, 24]; // Hours
   
+  // Find and set the selected slot if slotId is provided
+  useEffect(() => {
+    if (parkingLot && parkingLot.slots && slotId && (!selectedSlot || selectedSlot.id !== slotId)) {
+      const slot = parkingLot.slots.find(s => s.id === slotId);
+      if (slot) {
+        console.log("Setting selected slot from URL parameter:", slot);
+        setSelectedSlot(slot);
+      }
+    }
+  }, [parkingLot, slotId, selectedSlot, setSelectedSlot]);
+  
   // If there's no parking lot or no selected slot, redirect back
   useEffect(() => {
     if (!parkingLot) {
       navigate("/find-parking");
+      toast("Parking lot not found");
       return;
     }
     
     if (!selectedSlot && !slotId) {
       navigate(`/parking/${id}`);
-      toast({
-        title: "No slot selected",
-        description: "Please select a parking slot first"
-      });
+      toast("Please select a parking slot first");
     }
   }, [parkingLot, selectedSlot, slotId, id, navigate]);
   

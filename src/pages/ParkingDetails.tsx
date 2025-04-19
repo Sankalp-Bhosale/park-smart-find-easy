@@ -64,7 +64,9 @@ const ParkingDetails = () => {
       return;
     }
     
-    navigate(`/book/${parkingLot.id}?duration=${selectedDuration}&slotId=${selectedSlot.id}`);
+    const bookingUrl = `/book/${parkingLot.id}?duration=${selectedDuration}&slotId=${selectedSlot.id}`;
+    console.log("Navigating to booking page:", bookingUrl);
+    navigate(bookingUrl);
   };
 
   return (
@@ -255,7 +257,7 @@ const ParkingDetails = () => {
           className="w-full bg-park-yellow text-black font-bold py-6 rounded-xl"
           onClick={handleBookNow}
         >
-          {selectedSlot ? `Book Slot ${selectedSlot.name}` : `Book Now`}
+          {selectedSlot ? `Book Slot ${selectedSlot.name}` : `Select a Slot`}
         </Button>
       </div>
     </div>
