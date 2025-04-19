@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, MapPin, Clock, Car, Star, Info, Share2, Heart, Calendar, AlertCircle } from "lucide-react";
@@ -62,8 +61,6 @@ const ParkingDetails = () => {
   const handleBookNow = () => {
     if (!selectedSlot) {
       setActiveTab("slots");
-      // Fix: Changed from object format to plain string for toast message
-      toast("Please select a parking slot before proceeding");
       return;
     }
     
