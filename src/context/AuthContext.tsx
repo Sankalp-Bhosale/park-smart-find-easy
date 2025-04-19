@@ -5,12 +5,9 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
-// Define a custom user type that includes the name property
+// Define a custom user type that extends User without modifying required properties
 interface CustomUser extends User {
   name?: string;
-  user_metadata?: {
-    name?: string;
-  };
 }
 
 interface AuthContextType {
