@@ -55,7 +55,7 @@ interface ParkingContextType {
   searchParkingLots: (location: string) => Promise<ParkingLot[]>;
   getParkingLotById: (id: string) => ParkingLot | undefined;
   reservations: Reservation[];
-  createReservation: (reservation: Omit<Reservation, "id" | "status">) => Promise<Reservation>;
+  createReservation: (reservation: Omit<Reservation, "id">) => Promise<Reservation>;
   cancelReservation: (id: string) => Promise<void>;
   calculateParkingCost: (parkingLotId: string, hours: number) => number;
   favoriteLocations: string[];
@@ -272,7 +272,7 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
   };
 
   // Create a reservation
-  const createReservation = async (reservationData: Omit<Reservation, "id" | "status">): Promise<Reservation> => {
+  const createReservation = async (reservationData: Omit<Reservation, "id">): Promise<Reservation> => {
     // Generate a spotNumber if one doesn't exist
     const spotNumber = reservationData.spotNumber || 
                       (reservationData.slotName ? reservationData.slotName : `A${Math.floor(Math.random() * 100)}`);
@@ -280,7 +280,7 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
     const newReservation: Reservation = {
       ...reservationData,
       id: `res-${Date.now()}`,
-      status: "confirmed",
+      status: reservationData.status || "confirmed", // Use provided status or default to "confirmed"
       spotNumber: spotNumber
     };
     
