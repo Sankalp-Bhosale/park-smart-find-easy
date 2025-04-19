@@ -1,14 +1,15 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +20,11 @@ const Login = () => {
     e.preventDefault();
     
     if (!email || !password) {
-      setError("Email and password are required");
+      toast({
+        title: "Error",
+        description: "Email and password are required",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -40,7 +45,6 @@ const Login = () => {
     navigate("/register");
   };
 
-  // Demo login for testing
   const handleDemoLogin = async () => {
     setIsLoading(true);
     try {

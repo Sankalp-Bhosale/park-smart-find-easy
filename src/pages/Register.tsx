@@ -5,22 +5,27 @@ import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { toast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name || !email || !password) {
-      setError("All fields are required");
+      toast({
+        title: "Error",
+        description: "All fields are required",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -28,11 +33,8 @@ const Register = () => {
     
     try {
       await register(name, email, password);
-      navigate("/home");
+      // Navigation is handled by AuthContext
     } catch (error) {
-      setError("Registration failed. Please try again.");
-      console.error(error);
-    } finally {
       setIsLoading(false);
     }
   };
