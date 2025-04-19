@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ChevronLeft, CreditCard, Wallet } from "lucide-react";
+import { ChevronLeft, CreditCard, Wallet, ParkingMeter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -42,22 +42,21 @@ const PaymentMethod = () => {
     setIsLoading(true);
     
     try {
-      // In a real app, this would process payment via a payment gateway
+      // Create reservation with selected payment method
       const createdReservation = await createReservation({
         ...reservation,
-        paymentMethod,
+        paymentMethod: paymentMethod === "parking" ? "pay_at_parking" : paymentMethod,
+        status: paymentMethod === "parking" ? "pending_payment" : "confirmed",
         vehicleDetails: temporaryVehicleDetails ? {
           model: temporaryVehicleDetails.model,
-          type: "Sedan", // Just a default value
+          type: temporaryVehicleDetails.type,
           licensePlate: temporaryVehicleDetails.licensePlate
         } : undefined
       });
       
-      // Navigate to confirmation page
       navigate(`/confirmation/${createdReservation.id}`);
     } catch (error) {
       console.error("Payment failed", error);
-      // Handle payment errors
     } finally {
       setIsLoading(false);
     }
@@ -131,6 +130,17 @@ const PaymentMethod = () => {
           onValueChange={setPaymentMethod}
           className="space-y-4"
         >
+          <div className={`flex items-center space-x-3 border rounded-lg p-4 ${paymentMethod === 'parking' ? 'border-park-yellow bg-park-yellow/10' : 'border-gray-200'}`}>
+            <RadioGroupItem value="parking" id="parking" />
+            <Label htmlFor="parking" className="flex items-center gap-3 cursor-pointer flex-grow">
+              <ParkingMeter className="h-5 w-5" />
+              <div>
+                <p className="font-medium">Pay at Parking</p>
+                <p className="text-xs text-gray-500">Pay on-site when you arrive</p>
+              </div>
+            </Label>
+          </div>
+
           <div className={`flex items-center space-x-3 border rounded-lg p-4 ${paymentMethod === 'card' ? 'border-park-yellow bg-park-yellow/10' : 'border-gray-200'}`}>
             <RadioGroupItem value="card" id="card" />
             <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-grow">
@@ -172,7 +182,9 @@ const PaymentMethod = () => {
             onClick={handlePayment}
             disabled={isLoading}
           >
-            {isLoading ? "Processing..." : `Pay & Reserve (₹${reservation.cost})`}
+            {isLoading ? "Processing..." : paymentMethod === 'parking' 
+              ? `Reserve Slot (Pay ₹${reservation.cost} at parking)` 
+              : `Pay & Reserve (₹${reservation.cost})`}
           </Button>
         </div>
       </div>

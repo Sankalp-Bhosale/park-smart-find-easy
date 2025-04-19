@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Check, MapPin, Clock, Calendar, Car, Share2, ChevronLeft, QrCode, AlertCircle } from "lucide-react";
@@ -49,7 +48,6 @@ const BookingConfirmation = () => {
     });
   };
 
-  // Share booking details
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -72,7 +70,6 @@ const BookingConfirmation = () => {
     }
   };
 
-  // Generate a pseudo-QR code for the parking (in real app, this would be a QR code generator)
   const generateQrCode = () => {
     return (
       <div className="border-2 border-black rounded-lg p-2 w-full h-full flex flex-col items-center justify-center">
@@ -82,9 +79,10 @@ const BookingConfirmation = () => {
     );
   };
 
+  const isPayAtParking = reservation.paymentMethod === 'pay_at_parking';
+
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
       <div className="bg-white p-4 flex items-center border-b">
         <Button
           variant="ghost"
@@ -97,16 +95,20 @@ const BookingConfirmation = () => {
         <h1 className="text-xl font-bold">Booking Confirmation</h1>
       </div>
       
-      {/* Success Message */}
       <div className="flex flex-col items-center justify-center py-8 bg-park-yellow/10">
         <div className="bg-park-yellow rounded-full p-3 mb-4">
           <Check size={32} className="text-white" />
         </div>
-        <h2 className="text-xl font-bold mb-1">Reservation Successful!</h2>
-        <p className="text-gray-600">Your parking spot has been reserved</p>
+        <h2 className="text-xl font-bold mb-1">
+          {isPayAtParking ? 'Slot Reserved Successfully!' : 'Reservation Successful!'}
+        </h2>
+        <p className="text-gray-600">
+          {isPayAtParking 
+            ? 'Please pay at the parking location' 
+            : 'Your parking spot has been reserved'}
+        </p>
       </div>
       
-      {/* QR Code Section */}
       <div className="p-6 flex flex-col items-center border-b border-gray-100">
         <div className="bg-white p-4 rounded-lg shadow-md mb-4 w-64 h-64 flex items-center justify-center">
           {generateQrCode()}
@@ -114,12 +116,10 @@ const BookingConfirmation = () => {
         <p className="text-sm text-gray-500">Show this QR code at the entrance</p>
       </div>
       
-      {/* Booking Details */}
       <div className="p-6">
         <h3 className="font-bold text-lg mb-4">Booking Details</h3>
         
         <div className="space-y-4">
-          {/* Parking Location */}
           <div className="flex gap-4">
             <div className="bg-gray-100 rounded-full p-3 h-fit">
               <MapPin size={20} className="text-gray-600" />
@@ -130,7 +130,6 @@ const BookingConfirmation = () => {
             </div>
           </div>
           
-          {/* Date & Time */}
           <div className="flex gap-4">
             <div className="bg-gray-100 rounded-full p-3 h-fit">
               <Calendar size={20} className="text-gray-600" />
@@ -143,7 +142,6 @@ const BookingConfirmation = () => {
             </div>
           </div>
           
-          {/* Duration */}
           <div className="flex gap-4">
             <div className="bg-gray-100 rounded-full p-3 h-fit">
               <Clock size={20} className="text-gray-600" />
@@ -154,7 +152,6 @@ const BookingConfirmation = () => {
             </div>
           </div>
           
-          {/* Vehicle */}
           {reservation.vehicleDetails && (
             <div className="flex gap-4">
               <div className="bg-gray-100 rounded-full p-3 h-fit">
@@ -167,7 +164,6 @@ const BookingConfirmation = () => {
             </div>
           )}
           
-          {/* Spot Number */}
           <div className="bg-gray-50 p-4 rounded-lg mt-4">
             {reservation.slotName && (
               <div className="flex justify-between items-center">
@@ -187,14 +183,17 @@ const BookingConfirmation = () => {
             </div>
             {reservation.paymentMethod && (
               <div className="flex justify-between items-center mt-2">
-                <span className="text-gray-600">Payment Method</span>
-                <span className="font-medium capitalize">{reservation.paymentMethod}</span>
+                <span className="text-gray-600">Payment Status</span>
+                <span className="font-medium">
+                  {isPayAtParking 
+                    ? 'Pay at parking location' 
+                    : 'Paid'}
+                </span>
               </div>
             )}
           </div>
         </div>
         
-        {/* Share Button */}
         <Button 
           variant="outline"
           className="w-full mt-8 border-gray-300"
@@ -204,7 +203,6 @@ const BookingConfirmation = () => {
           Share Booking Details
         </Button>
         
-        {/* Done Button */}
         <Button 
           className="w-full bg-park-yellow text-black font-bold py-6 rounded-xl mt-4"
           onClick={() => navigate("/home")}

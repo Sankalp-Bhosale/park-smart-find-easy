@@ -41,7 +41,7 @@ interface Reservation {
   endTime: Date;
   duration: number;
   cost: number;
-  status: "pending" | "confirmed" | "completed" | "canceled";
+  status: "pending" | "confirmed" | "completed" | "canceled" | "pending_payment";
   paymentMethod?: string;
   vehicleDetails?: {
     model: string;
