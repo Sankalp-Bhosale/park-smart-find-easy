@@ -1,5 +1,6 @@
-
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState } from "react";
+import { useDatabase } from "@/hooks/useDatabase";
+import { useAuth } from "./AuthContext";
 
 // Types
 interface ParkingLot {
@@ -228,8 +229,16 @@ const MOCK_PARKING_LOTS: ParkingLot[] = [
 // Create context
 const ParkingContext = createContext<ParkingContextType | undefined>(undefined);
 
-export function ParkingProvider({ children }: { children: ReactNode }) {
-  const [parkingLots, setParkingLots] = useState<ParkingLot[]>(MOCK_PARKING_LOTS);
+export function ParkingProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const { useParking, useBookings } = useDatabase();
+  
+  // Fetch parking locations from the database
+  const { data: parkingLocations = [] } = useParking();
+  
+  // Fetch user bookings if user is authenticated
+  const { data: userBookings = [] } = useBookings(user?.id || "");
+  
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [favoriteLocations, setFavoriteLocations] = useState<string[]>(["Andheri East", "Bandra West"]);
   const [selectedSlot, setSelectedSlot] = useState<ParkingSlot | null>(null);
@@ -361,7 +370,7 @@ export function ParkingProvider({ children }: { children: ReactNode }) {
   };
 
   const contextValue: ParkingContextType = {
-    nearbyParkingLots: parkingLots,
+    nearbyParkingLots: parkingLocations,
     searchParkingLots,
     getParkingLotById,
     reservations,
