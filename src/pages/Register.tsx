@@ -16,6 +16,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,11 +31,13 @@ const Register = () => {
     }
     
     setIsLoading(true);
+    setErrorMessage(null);
     
     try {
       await register(name, email, password);
       // Navigation is handled by AuthContext
-    } catch (error) {
+    } catch (error: any) {
+      setErrorMessage(error.message || "Registration failed");
       setIsLoading(false);
     }
   };
@@ -107,8 +110,8 @@ const Register = () => {
             </div>
           </div>
           
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
+          {errorMessage && (
+            <p className="text-red-500 text-sm">{errorMessage}</p>
           )}
           
           <Button

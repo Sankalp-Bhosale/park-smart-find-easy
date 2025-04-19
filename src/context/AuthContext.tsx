@@ -5,8 +5,16 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
+// Define a custom user type that includes the name property
+interface CustomUser extends User {
+  name?: string;
+  user_metadata?: {
+    name?: string;
+  };
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: CustomUser | null;
   session: Session | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -17,7 +25,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<CustomUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,7 +35,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        
+        // Update user with custom properties
+        if (session?.user) {
+          const customUser: CustomUser = {
+            ...session.user,
+            name: session.user.user_metadata?.name || "Guest User"
+          };
+          setUser(customUser);
+        } else {
+          setUser(null);
+        }
 
         if (event === 'SIGNED_IN') {
           navigate('/home');
@@ -40,7 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const customUser: CustomUser = {
+          ...session.user,
+          name: session.user.user_metadata?.name || "Guest User"
+        };
+        setUser(customUser);
+      } else {
+        setUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
