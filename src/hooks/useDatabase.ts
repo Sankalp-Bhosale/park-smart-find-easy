@@ -2,10 +2,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 export const useDatabase = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Fetch parking locations
   const useParking = () => {
@@ -66,9 +68,22 @@ export const useDatabase = () => {
         status: string;
         payment_status: string;
       }) => {
+        // Get current user ID
+        const userId = user?.id;
+        
+        if (!userId) {
+          throw new Error("User must be logged in to create a booking");
+        }
+        
+        // Add user_id to the booking
+        const bookingWithUser = {
+          ...booking,
+          user_id: userId
+        };
+
         const { data, error } = await supabase
           .from('bookings')
-          .insert([booking])
+          .insert(bookingWithUser)
           .select()
           .single();
 

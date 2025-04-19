@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState } from "react";
 import { useDatabase } from "@/hooks/useDatabase";
 import { useAuth } from "./AuthContext";
@@ -234,15 +235,34 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
   const { useParking, useBookings } = useDatabase();
   
   // Fetch parking locations from the database
-  const { data: parkingLocations = [] } = useParking();
+  const { data: parkingLocationsData = [] } = useParking();
+  
+  // Transform database parking locations to our ParkingLot structure
+  const parkingLocations = parkingLocationsData.map(loc => ({
+    id: loc.id,
+    name: loc.name,
+    address: loc.address,
+    location: { lat: loc.lat, lng: loc.lng },
+    totalSpots: loc.total_spots,
+    availableSpots: loc.available_spots,
+    hourlyRate: loc.price_per_hour,
+    dailyRate: loc.price_per_hour * 8, // Estimate daily rate
+    distance: 1.0, // Default distance
+    images: ["/lovable-uploads/40da5286-6726-44b4-8089-65e57c79f277.png"], // Default image
+    rating: 4.0, // Default rating
+    amenities: ["Security", "CCTV"],
+    operatingHours: "Open 24 Hours"
+  }));
   
   // Fetch user bookings if user is authenticated
   const { data: userBookings = [] } = useBookings(user?.id || "");
   
+  // State variables
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [favoriteLocations, setFavoriteLocations] = useState<string[]>(["Andheri East", "Bandra West"]);
   const [selectedSlot, setSelectedSlot] = useState<ParkingSlot | null>(null);
   const [temporaryVehicleDetails, setTemporaryVehicleDetails] = useState<{ model: string; licensePlate: string; type: string } | null>(null);
+  const [parkingLots, setParkingLots] = useState<ParkingLot[]>(MOCK_PARKING_LOTS);
 
   // Search for parking lots near a location
   const searchParkingLots = async (location: string): Promise<ParkingLot[]> => {
@@ -277,6 +297,11 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
 
   // Get a parking lot by ID
   const getParkingLotById = (id: string): ParkingLot | undefined => {
+    // First try to find in real data
+    const realLot = parkingLocations.find(loc => loc.id === id);
+    if (realLot) return realLot;
+    
+    // Fall back to mock data
     return parkingLots.find(lot => lot.id === id);
   };
 
@@ -346,7 +371,7 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
 
   // Calculate parking cost
   const calculateParkingCost = (parkingLotId: string, hours: number): number => {
-    const lot = parkingLots.find(lot => lot.id === parkingLotId);
+    const lot = getParkingLotById(parkingLotId);
     if (!lot) return 0;
     
     if (hours <= 24) {
@@ -370,7 +395,7 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
   };
 
   const contextValue: ParkingContextType = {
-    nearbyParkingLots: parkingLocations,
+    nearbyParkingLots: parkingLocations.length > 0 ? parkingLocations : parkingLots,
     searchParkingLots,
     getParkingLotById,
     reservations,
