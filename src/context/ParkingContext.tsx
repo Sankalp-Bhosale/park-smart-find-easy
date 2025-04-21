@@ -251,7 +251,8 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
     images: ["/lovable-uploads/40da5286-6726-44b4-8089-65e57c79f277.png"], // Default image
     rating: 4.0, // Default rating
     amenities: ["Security", "CCTV"],
-    operatingHours: "Open 24 Hours"
+    operatingHours: "Open 24 Hours",
+    slots: generateParkingSlots(loc.id, loc.total_spots) // Generate slots for database lots too
   }));
   
   // Fetch user bookings if user is authenticated
