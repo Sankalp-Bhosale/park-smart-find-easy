@@ -13,12 +13,25 @@ const History = () => {
   const { reservations } = useParking();
   const [activeTab, setActiveTab] = useState<"active" | "completed" | "cancelled">("active");
 
+  console.log("All reservations in History:", reservations);
+
   const filteredReservations = reservations.filter(reservation => {
-    if (activeTab === "active") return reservation.status === "confirmed";
-    if (activeTab === "completed") return reservation.status === "completed";
-    if (activeTab === "cancelled") return reservation.status === "canceled";
+    console.log("Filtering reservation:", reservation.id, "status:", reservation.status, "activeTab:", activeTab);
+    
+    if (activeTab === "active") {
+      // Show confirmed and pending_payment as active
+      return reservation.status === "confirmed" || reservation.status === "pending_payment" || reservation.status === "pending";
+    }
+    if (activeTab === "completed") {
+      return reservation.status === "completed";
+    }
+    if (activeTab === "cancelled") {
+      return reservation.status === "canceled";
+    }
     return true;
   });
+
+  console.log("Filtered reservations:", filteredReservations);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -33,6 +46,23 @@ const History = () => {
       minute: '2-digit',
       hour12: true 
     });
+  };
+
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return { label: "Active", className: "bg-green-100 text-green-800" };
+      case "pending_payment":
+        return { label: "Pending Payment", className: "bg-yellow-100 text-yellow-800" };
+      case "pending":
+        return { label: "Pending", className: "bg-yellow-100 text-yellow-800" };
+      case "completed":
+        return { label: "Completed", className: "bg-blue-100 text-blue-800" };
+      case "canceled":
+        return { label: "Cancelled", className: "bg-red-100 text-red-800" };
+      default:
+        return { label: status, className: "bg-gray-100 text-gray-800" };
+    }
   };
 
   return (
@@ -69,51 +99,50 @@ const History = () => {
           <TabsContent value={activeTab} className="mt-4">
             {filteredReservations.length > 0 ? (
               <div className="space-y-4">
-                {filteredReservations.map((reservation) => (
-                  <Card
-                    key={reservation.id}
-                    className="overflow-hidden border-none shadow-sm rounded-lg cursor-pointer"
-                    onClick={() => navigate(`/confirmation/${reservation.id}`)}
-                  >
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-bold">{reservation.parkingLotName}</h3>
-                        <div className={`
-                          px-3 py-1 rounded-full text-xs font-medium
-                          ${reservation.status === "confirmed" ? "bg-green-100 text-green-800" : 
-                            reservation.status === "completed" ? "bg-blue-100 text-blue-800" : 
-                            "bg-orange-100 text-orange-800"}
-                        `}>
-                          {reservation.status === "confirmed" ? "Active" : 
-                           reservation.status === "completed" ? "Completed" : 
-                           "Cancelled"}
+                {filteredReservations.map((reservation) => {
+                  const statusInfo = getStatusDisplay(reservation.status);
+                  return (
+                    <Card
+                      key={reservation.id}
+                      className="overflow-hidden border-none shadow-sm rounded-lg cursor-pointer"
+                      onClick={() => navigate(`/confirmation/${reservation.id}`)}
+                    >
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="font-bold">{reservation.parkingLotName}</h3>
+                          <div className={`
+                            px-3 py-1 rounded-full text-xs font-medium
+                            ${statusInfo.className}
+                          `}>
+                            {statusInfo.label}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center text-sm text-gray-500 gap-1 mb-3">
+                          <Clock size={14} />
+                          <span>
+                            {formatDate(reservation.startTime)} • {formatTime(reservation.startTime)} - {formatTime(reservation.endTime)}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-xs text-gray-500">Spot</p>
+                            <p className="font-medium">{reservation.spotNumber}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Duration</p>
+                            <p className="font-medium">{reservation.duration} hr{reservation.duration > 1 ? 's' : ''}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Amount</p>
+                            <p className="font-medium">₹{reservation.cost}</p>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center text-sm text-gray-500 gap-1 mb-3">
-                        <Clock size={14} />
-                        <span>
-                          {formatDate(reservation.startTime)} • {formatTime(reservation.startTime)} - {formatTime(reservation.endTime)}
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-xs text-gray-500">Spot</p>
-                          <p className="font-medium">{reservation.spotNumber}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Duration</p>
-                          <p className="font-medium">{reservation.duration} hr{reservation.duration > 1 ? 's' : ''}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Amount</p>
-                          <p className="font-medium">₹{reservation.cost}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16">

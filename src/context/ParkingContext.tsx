@@ -240,18 +240,23 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
   const { data: userBookings = [] } = useBookings(user?.id || "");
   
   // Transform database bookings to our Reservation structure
-  const databaseReservations: Reservation[] = userBookings.map(booking => ({
-    id: booking.id,
-    parkingLotId: booking.parking_location_id,
-    parkingLotName: booking.parking_locations?.name || 'Unknown Location',
-    startTime: new Date(booking.start_time),
-    endTime: new Date(booking.end_time),
-    duration: Math.ceil((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / (1000 * 60 * 60)),
-    cost: booking.amount,
-    status: booking.status as "pending" | "confirmed" | "completed" | "canceled" | "pending_payment",
-    spotNumber: `A${Math.floor(Math.random() * 100) + 1}`, // Generate spot number since it's not in DB
-    paymentMethod: booking.payment_status === 'pending' ? 'pay_at_parking' : 'paid'
-  }));
+  const databaseReservations: Reservation[] = userBookings.map(booking => {
+    console.log("Processing booking:", booking);
+    return {
+      id: booking.id,
+      parkingLotId: booking.parking_location_id,
+      parkingLotName: booking.parking_locations?.name || 'Unknown Location',
+      startTime: new Date(booking.start_time),
+      endTime: new Date(booking.end_time),
+      duration: Math.ceil((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / (1000 * 60 * 60)),
+      cost: booking.amount,
+      status: booking.status as "pending" | "confirmed" | "completed" | "canceled" | "pending_payment",
+      spotNumber: `A${Math.floor(Math.random() * 100) + 1}`, // Generate spot number since it's not in DB
+      paymentMethod: booking.payment_status === 'pending' ? 'pay_at_parking' : 'paid'
+    };
+  });
+  
+  console.log("Database reservations:", databaseReservations);
   
   // Transform database parking locations to our ParkingLot structure
   const parkingLocations = parkingLocationsData.map(loc => ({
@@ -280,6 +285,7 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
 
   // Combine database reservations with local ones
   const allReservations = [...databaseReservations, ...localReservations];
+  console.log("All reservations:", allReservations);
 
   const createBookingMutation = useCreateBooking();
 
@@ -326,6 +332,8 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
 
   // Create a reservation
   const createReservation = async (reservationData: Omit<Reservation, "id">): Promise<Reservation> => {
+    console.log("Creating reservation with data:", reservationData);
+    
     try {
       // Try to create in database first
       if (user?.id) {
@@ -338,11 +346,13 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
           payment_status: reservationData.paymentMethod === 'pay_at_parking' ? 'pending' : 'paid'
         });
 
+        console.log("Database booking created:", dbBooking);
+
         // Return the created reservation with database ID
         return {
           id: dbBooking.id,
           parkingLotId: reservationData.parkingLotId,
-          parkingLotName: reservationData.parkingLotName,
+          parkingLotName: dbBooking.parking_locations?.name || reservationData.parkingLotName,
           slotId: reservationData.slotId,
           slotName: reservationData.slotName,
           spotNumber: reservationData.spotNumber || `A${Math.floor(Math.random() * 100) + 1}`,

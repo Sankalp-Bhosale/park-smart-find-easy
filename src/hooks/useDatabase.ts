@@ -32,17 +32,27 @@ export const useDatabase = () => {
     });
   };
 
-  // Fetch user bookings
+  // Fetch user bookings with parking location details
   const useBookings = (userId: string) => {
     return useQuery({
       queryKey: ['bookings', userId],
       queryFn: async () => {
+        console.log("Fetching bookings for user:", userId);
         const { data, error } = await supabase
           .from('bookings')
-          .select('*, parking_locations(*)')
-          .eq('user_id', userId);
+          .select(`
+            *,
+            parking_locations (
+              id,
+              name,
+              address
+            )
+          `)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
         
         if (error) {
+          console.error("Error fetching bookings:", error);
           toast({
             title: "Error fetching bookings",
             description: error.message,
@@ -51,6 +61,7 @@ export const useDatabase = () => {
           throw error;
         }
         
+        console.log("Fetched bookings:", data);
         return data;
       },
       enabled: !!userId,
@@ -81,13 +92,23 @@ export const useDatabase = () => {
           user_id: userId
         };
 
+        console.log("Creating booking:", bookingWithUser);
+
         const { data, error } = await supabase
           .from('bookings')
           .insert(bookingWithUser)
-          .select()
+          .select(`
+            *,
+            parking_locations (
+              id,
+              name,
+              address
+            )
+          `)
           .single();
 
         if (error) {
+          console.error("Error creating booking:", error);
           toast({
             title: "Error creating booking",
             description: error.message,
@@ -96,6 +117,7 @@ export const useDatabase = () => {
           throw error;
         }
 
+        console.log("Created booking:", data);
         return data;
       },
       onSuccess: () => {

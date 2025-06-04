@@ -14,9 +14,13 @@ const Home = () => {
   const { nearbyParkingLots, reservations, favoriteLocations } = useParking();
   const [searchQuery, setSearchQuery] = useState("");
 
+  console.log("All reservations in Home:", reservations);
+
   const activeReservations = reservations.filter(
-    (res) => res.status === "confirmed"
+    (res) => res.status === "confirmed" || res.status === "pending_payment" || res.status === "pending"
   );
+
+  console.log("Active reservations in Home:", activeReservations);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +84,9 @@ const Home = () => {
                     {formatDate(activeReservations[0].startTime)} - {formatDate(activeReservations[0].endTime)}
                   </span>
                 </div>
+                {activeReservations[0].status === "pending_payment" && (
+                  <p className="text-xs text-orange-600 mt-1">Payment pending</p>
+                )}
               </div>
               <Button 
                 onClick={() => navigate(`/confirmation/${activeReservations[0].id}`)} 
