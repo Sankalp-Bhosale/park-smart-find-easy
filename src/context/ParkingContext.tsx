@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState } from "react";
 import { useDatabase } from "@/hooks/useDatabase";
 import { useAuth } from "./AuthContext";
@@ -232,10 +231,27 @@ const ParkingContext = createContext<ParkingContextType | undefined>(undefined);
 
 export function ParkingProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { useParking, useBookings } = useDatabase();
+  const { useParking, useBookings, useCreateBooking } = useDatabase();
   
   // Fetch parking locations from the database
   const { data: parkingLocationsData = [] } = useParking();
+  
+  // Fetch user bookings if user is authenticated
+  const { data: userBookings = [] } = useBookings(user?.id || "");
+  
+  // Transform database bookings to our Reservation structure
+  const databaseReservations: Reservation[] = userBookings.map(booking => ({
+    id: booking.id,
+    parkingLotId: booking.parking_location_id,
+    parkingLotName: booking.parking_locations?.name || 'Unknown Location',
+    startTime: new Date(booking.start_time),
+    endTime: new Date(booking.end_time),
+    duration: Math.ceil((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / (1000 * 60 * 60)),
+    cost: booking.amount,
+    status: booking.status as "pending" | "confirmed" | "completed" | "canceled" | "pending_payment",
+    spotNumber: `A${Math.floor(Math.random() * 100) + 1}`, // Generate spot number since it's not in DB
+    paymentMethod: booking.payment_status === 'pending' ? 'pay_at_parking' : 'paid'
+  }));
   
   // Transform database parking locations to our ParkingLot structure
   const parkingLocations = parkingLocationsData.map(loc => ({
@@ -252,18 +268,20 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
     rating: 4.0, // Default rating
     amenities: ["Security", "CCTV"],
     operatingHours: "Open 24 Hours",
-    slots: generateParkingSlots(loc.id, loc.total_spots) // Generate slots for database lots too
+    slots: generateParkingSlots(loc.id, loc.total_spots)
   }));
   
-  // Fetch user bookings if user is authenticated
-  const { data: userBookings = [] } = useBookings(user?.id || "");
-  
   // State variables
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [localReservations, setLocalReservations] = useState<Reservation[]>([]);
   const [favoriteLocations, setFavoriteLocations] = useState<string[]>(["Andheri East", "Bandra West"]);
   const [selectedSlot, setSelectedSlot] = useState<ParkingSlot | null>(null);
   const [temporaryVehicleDetails, setTemporaryVehicleDetails] = useState<{ model: string; licensePlate: string; type: string } | null>(null);
   const [parkingLots, setParkingLots] = useState<ParkingLot[]>(MOCK_PARKING_LOTS);
+
+  // Combine database reservations with local ones
+  const allReservations = [...databaseReservations, ...localReservations];
+
+  const createBookingMutation = useCreateBooking();
 
   // Search for parking lots near a location
   const searchParkingLots = async (location: string): Promise<ParkingLot[]> => {
@@ -308,18 +326,51 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
 
   // Create a reservation
   const createReservation = async (reservationData: Omit<Reservation, "id">): Promise<Reservation> => {
-    // Generate a spotNumber if one doesn't exist
+    try {
+      // Try to create in database first
+      if (user?.id) {
+        const dbBooking = await createBookingMutation.mutateAsync({
+          parking_location_id: reservationData.parkingLotId,
+          start_time: reservationData.startTime.toISOString(),
+          end_time: reservationData.endTime.toISOString(),
+          amount: reservationData.cost,
+          status: reservationData.status || "confirmed",
+          payment_status: reservationData.paymentMethod === 'pay_at_parking' ? 'pending' : 'paid'
+        });
+
+        // Return the created reservation with database ID
+        return {
+          id: dbBooking.id,
+          parkingLotId: reservationData.parkingLotId,
+          parkingLotName: reservationData.parkingLotName,
+          slotId: reservationData.slotId,
+          slotName: reservationData.slotName,
+          spotNumber: reservationData.spotNumber || `A${Math.floor(Math.random() * 100) + 1}`,
+          startTime: reservationData.startTime,
+          endTime: reservationData.endTime,
+          duration: reservationData.duration,
+          cost: reservationData.cost,
+          status: reservationData.status || "confirmed",
+          paymentMethod: reservationData.paymentMethod,
+          vehicleDetails: reservationData.vehicleDetails
+        };
+      }
+    } catch (error) {
+      console.error("Failed to create booking in database:", error);
+    }
+
+    // Fallback to local storage if database fails or user not logged in
     const spotNumber = reservationData.spotNumber || 
                       (reservationData.slotName ? reservationData.slotName : `A${Math.floor(Math.random() * 100)}`);
     
     const newReservation: Reservation = {
       ...reservationData,
       id: `res-${Date.now()}`,
-      status: reservationData.status || "confirmed", // Use provided status or default to "confirmed"
+      status: reservationData.status || "confirmed",
       spotNumber: spotNumber
     };
     
-    setReservations(prev => [...prev, newReservation]);
+    setLocalReservations(prev => [...prev, newReservation]);
     
     // If this reservation includes a slot, mark it as unavailable
     if (reservationData.slotId) {
@@ -345,9 +396,10 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
   // Cancel a reservation
   const cancelReservation = async (id: string): Promise<void> => {
     // Find the reservation first to get the slot details
-    const reservation = reservations.find(res => res.id === id);
+    const reservation = allReservations.find(res => res.id === id);
     
-    setReservations(prev => 
+    // Update local reservations
+    setLocalReservations(prev => 
       prev.map(res => res.id === id ? { ...res, status: "canceled" } : res)
     );
     
@@ -399,7 +451,7 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
     nearbyParkingLots: parkingLocations.length > 0 ? parkingLocations : parkingLots,
     searchParkingLots,
     getParkingLotById,
-    reservations,
+    reservations: allReservations,
     createReservation,
     cancelReservation,
     calculateParkingCost,

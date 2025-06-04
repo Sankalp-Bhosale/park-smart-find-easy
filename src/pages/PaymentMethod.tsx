@@ -42,6 +42,13 @@ const PaymentMethod = () => {
     setIsLoading(true);
     
     try {
+      console.log("Creating reservation with data:", {
+        ...reservation,
+        paymentMethod: paymentMethod === "parking" ? "pay_at_parking" : paymentMethod,
+        status: paymentMethod === "parking" ? "pending_payment" : "confirmed",
+        vehicleDetails: temporaryVehicleDetails
+      });
+      
       // Create reservation with selected payment method
       const createdReservation = await createReservation({
         ...reservation,
@@ -54,6 +61,7 @@ const PaymentMethod = () => {
         } : undefined
       });
       
+      console.log("Reservation created successfully:", createdReservation);
       navigate(`/confirmation/${createdReservation.id}`);
     } catch (error) {
       console.error("Payment failed", error);
